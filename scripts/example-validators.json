@@ -1,0 +1,17 @@
+[
+  {
+    "orchestratorPubkey": "FvK9bLyZNTvgcPBjQmppqKRAMRo8bqBmLXtUHd7oSmLi",
+    "mirageValidator": "miragevaloper1abc123def456ghi789",
+    "votingPower": 3000
+  },
+  {
+    "orchestratorPubkey": "8hN7rteJ2m9RwKBGqiLMNWKvPqVzPMFjJ9LsKf8Xwdui",
+    "mirageValidator": "miragevaloper1xyz987uvw654rst321",
+    "votingPower": 4000
+  },
+  {
+    "orchestratorPubkey": "3KaJnwUGG7dPw8GepYqQpyUkVwSn4CAqLfzL1GwVPaDn",
+    "mirageValidator": "miragevaloper1mnop456klm789jkl012",
+    "votingPower": 3000
+  }
+]

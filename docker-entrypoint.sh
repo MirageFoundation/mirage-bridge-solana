@@ -19,10 +19,19 @@ if [ ! -f "$WALLET_PATH" ]; then
 fi
 
 # Show wallet info on startup
-echo "Wallet: $(solana address)"
-echo "Network: $(solana config get | grep 'RPC URL' | awk '{print $3}')"
+RPC_URL=$(solana config get | grep 'RPC URL' | awk '{print $3}')
+if [[ "$RPC_URL" == *"devnet"* ]]; then
+    NETWORK="DEVNET"
+elif [[ "$RPC_URL" == *"mainnet"* ]]; then
+    NETWORK="MAINNET"
+else
+    NETWORK="$RPC_URL"
+fi
+echo "==========================================="
+echo "Network: $NETWORK"
+echo "Wallet:  $(solana address)"
 BALANCE=$(solana balance 2>/dev/null || echo "0 SOL (offline or unfunded)")
 echo "Balance: $BALANCE"
-echo "---"
+echo "==========================================="
 
 exec "$@"

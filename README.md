@@ -36,16 +36,40 @@ The bridge enables bidirectional token transfers:
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) (1.75+)
-- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (1.18+)
-- [Anchor](https://www.anchor-lang.com/docs/installation) (0.32+)
-- [Bun](https://bun.sh/) (for testing)
+- [Docker](https://docs.docker.com/get-docker/)
+
+All other dependencies (Rust, Solana CLI, Anchor, Bun) are provided by the Docker container.
+
+### Development Environment
+
+```bash
+# Start the development container (builds image on first run)
+./docker.sh start devnet    # or: ./docker.sh start mainnet
+
+# Stop the container
+./docker.sh stop
+
+# Rebuild the Docker image (after Dockerfile changes)
+./docker.sh rebuild
+```
+
+On first start, if no wallet exists at `~/.config/solana/id.json`, one is generated automatically.
+Fund your wallet at https://faucet.solana.com/ (devnet).
 
 ### Build
 
+**Always use `./build.sh`** instead of `anchor build` directly:
+
 ```bash
-anchor build
+./build.sh
 ```
+
+This script:
+1. Runs `anchor keys sync` - syncs `declare_id!` in lib.rs with the program keypair
+2. Runs `anchor build`
+3. Updates `scripts/common/config.ts` with the program ID
+
+This prevents program ID mismatches that cause failed deployments.
 
 ### Test
 
@@ -57,12 +81,39 @@ bun test
 ### Deploy
 
 ```bash
-# Devnet
+# Build first (always!)
+./build.sh
+
+# Deploy to devnet
 anchor deploy --provider.cluster devnet
 
-# Mainnet (after thorough testing)
+# Deploy to mainnet (after thorough testing)
 anchor deploy --provider.cluster mainnet
 ```
+
+### Key Files
+
+| File | Description |
+|------|-------------|
+| `target/deploy/mirage_bridge-keypair.json` | Program keypair (determines program ID) |
+| `target/deploy/mirage_bridge.so` | Compiled program binary |
+| `target/idl/mirage_bridge.json` | IDL for client integration |
+| `~/.config/solana/id.json` | Your wallet (mounted from host) |
+
+## Concepts
+
+### Program ID
+
+Every Solana program has a unique address derived from its keypair (`target/deploy/mirage_bridge-keypair.json`). This ID must be declared in two places:
+
+1. **lib.rs**: `declare_id!("...")` - the program checks this at runtime
+2. **config.ts**: `PROGRAM_ID` - clients use this to call the program
+
+If these don't match the deployed program, calls will fail. The `./build.sh` script keeps them in sync automatically.
+
+### IDL (Interface Definition Language)
+
+A JSON file (`target/idl/mirage_bridge.json`) describing the program's API - all instructions, accounts, and types. Think of it like an ABI in Ethereum. Clients use it to know how to serialize/deserialize data when calling the program.
 
 ## Program Instructions
 

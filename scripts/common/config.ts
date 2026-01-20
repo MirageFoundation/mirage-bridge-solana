@@ -1,12 +1,13 @@
 import { Connection, Keypair, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
+import { execSync } from "child_process";
 import { MirageBridge } from "../../target/types/mirage_bridge";
 import IDL from "../../target/idl/mirage_bridge.json";
 
 export type Network = "localnet" | "devnet" | "mainnet";
 
-export const PROGRAM_ID = new PublicKey("8uTqBhqHt8BCJNdS7aDX7vUXHmABevhqwyQsAoxv4jx9");
+export const PROGRAM_ID = new PublicKey("2Qq27EibjxwgaV69WJst2Wxj3TS33DSVV42Gys9pDV8V");
 
 export const RPC_URLS: Record<Network, string> = {
   localnet: "http://127.0.0.1:8899",
@@ -14,12 +15,36 @@ export const RPC_URLS: Record<Network, string> = {
   mainnet: clusterApiUrl("mainnet-beta"),
 };
 
-export function getNetwork(): Network {
-  const net = process.env.NETWORK || "localnet";
-  if (net !== "localnet" && net !== "devnet" && net !== "mainnet") {
-    throw new Error(`Invalid network: ${net}. Use localnet, devnet, or mainnet`);
+function getSolanaConfig(): { rpcUrl: string; keypairPath: string } {
+  try {
+    const output = execSync("solana config get", { encoding: "utf-8" });
+    const rpcMatch = output.match(/RPC URL:\s*(\S+)/);
+    const keypairMatch = output.match(/Keypair Path:\s*(\S+)/);
+    return {
+      rpcUrl: rpcMatch?.[1] || "",
+      keypairPath: keypairMatch?.[1] || "",
+    };
+  } catch {
+    return { rpcUrl: "", keypairPath: "" };
   }
-  return net;
+}
+
+function networkFromRpcUrl(rpcUrl: string): Network {
+  if (rpcUrl.includes("devnet")) return "devnet";
+  if (rpcUrl.includes("mainnet")) return "mainnet";
+  return "localnet";
+}
+
+export function getNetwork(): Network {
+  if (process.env.NETWORK) {
+    const net = process.env.NETWORK;
+    if (net !== "localnet" && net !== "devnet" && net !== "mainnet") {
+      throw new Error(`Invalid network: ${net}. Use localnet, devnet, or mainnet`);
+    }
+    return net;
+  }
+  const { rpcUrl } = getSolanaConfig();
+  return networkFromRpcUrl(rpcUrl);
 }
 
 export function loadKeypair(path: string): Keypair {
@@ -28,12 +53,21 @@ export function loadKeypair(path: string): Keypair {
 }
 
 export function getWalletPath(): string {
-  return process.env.WALLET || "./test-wallet.json";
+  if (process.env.WALLET) return process.env.WALLET;
+  const { keypairPath } = getSolanaConfig();
+  if (keypairPath && existsSync(keypairPath)) return keypairPath;
+  return "./test-wallet.json";
 }
 
 export function getConnection(network: Network): Connection {
-  const rpcUrl = process.env.RPC_URL || RPC_URLS[network];
-  return new Connection(rpcUrl, "confirmed");
+  if (process.env.RPC_URL) {
+    return new Connection(process.env.RPC_URL, "confirmed");
+  }
+  const { rpcUrl } = getSolanaConfig();
+  if (rpcUrl) {
+    return new Connection(rpcUrl, "confirmed");
+  }
+  return new Connection(RPC_URLS[network], "confirmed");
 }
 
 export function getProvider(connection: Connection, wallet: Keypair): AnchorProvider {

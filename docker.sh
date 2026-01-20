@@ -7,8 +7,8 @@
 set -e
 cd "$(dirname "$0")"
 
-IMAGE_NAME="solana-dev"
-CONTAINER_NAME="solana-dev"
+IMAGE_NAME="solana"
+CONTAINER_NAME="solana"
 
 usage() {
     echo "Usage:"

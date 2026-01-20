@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/mirage_bridge.json`.
  */
 export type MirageBridge = {
-  "address": "8uTqBhqHt8BCJNdS7aDX7vUXHmABevhqwyQsAoxv4jx9",
+  "address": "2Qq27EibjxwgaV69WJst2Wxj3TS33DSVV42Gys9pDV8V",
   "metadata": {
     "name": "mirageBridge",
     "version": "0.1.0",

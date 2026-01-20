@@ -5,15 +5,18 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
+[programs.devnet]
+mirage_bridge = "4PH1ZRM9Fww7B7f2KTFBNWLwVb1CJ824imRNtKZig6tv"
+
 [programs.localnet]
-mirage_bridge = "2Qq27EibjxwgaV69WJst2Wxj3TS33DSVV42Gys9pDV8V"
+mirage_bridge = "369a7CmLeMjRxVY3EfPnY9pYexgDEyCTNyBUsNSeHTbf"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "devnet"
-wallet = "~/.config/solana/id.json"
+wallet = "~/.config/solana/mirage-bridge-authority.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""

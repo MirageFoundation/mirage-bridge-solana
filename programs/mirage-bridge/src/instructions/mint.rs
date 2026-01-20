@@ -6,14 +6,29 @@ use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 use crate::constants::{BASIS_POINTS_DENOMINATOR, MAX_ATTESTORS};
 use crate::errors::BridgeError;
 use crate::events::{MintAttested, MintCompleted};
-use crate::state::{BridgeConfig, MintRecord, ValidatorRegistry};
-use crate::utils::{build_attestation_payload, verify_ed25519_signature};
+use crate::state::{BridgeConfig, BridgeState, MintRecord, ValidatorRegistry};
+use crate::utils::{build_attestation_payload, verify_ed25519_signature, is_bit_set, set_bit, shift_bitmap};
 
 pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
     let bridge_config = &ctx.accounts.bridge_config;
 
     require!(!bridge_config.paused, BridgeError::BridgePaused);
     require!(params.amount > 0, BridgeError::InvalidAmount);
+
+    // Replay protection check
+    let bridge_state = &mut ctx.accounts.bridge_state;
+    let sequence = params.sequence;
+
+    if sequence <= bridge_state.last_sequence {
+        let diff = (bridge_state.last_sequence - sequence) as usize;
+        if diff >= 1024 {
+            return err!(BridgeError::TransactionTooOld);
+        }
+        if is_bit_set(&bridge_state.replay_bitmap, diff) {
+            return err!(BridgeError::AlreadyMinted);
+        }
+    }
+    // Note: If sequence > last_sequence, it's valid (new tip)
 
     let validator_registry = &ctx.accounts.validator_registry;
     require!(
@@ -41,6 +56,7 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
     let mint_record = &mut ctx.accounts.mint_record;
 
     if mint_record.attestations.is_empty() {
+        mint_record.payer = ctx.accounts.orchestrator.key();
         mint_record.burn_tx_hash = params.burn_tx_hash;
         mint_record.recipient = ctx.accounts.recipient.key();
         mint_record.amount = params.amount;
@@ -62,10 +78,6 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
             mint_record.amount == params.amount,
             BridgeError::AmountMismatch
         );
-    }
-
-    if mint_record.completed {
-        return Ok(());
     }
 
     if mint_record.has_attested(&ctx.accounts.orchestrator.key()) {
@@ -116,8 +128,18 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         )?;
 
         let clock = Clock::get()?;
-        mint_record.completed = true;
-        mint_record.completed_at = Some(clock.unix_timestamp);
+        let timestamp = clock.unix_timestamp;
+
+        // Update BridgeState (bitmap)
+        if sequence > bridge_state.last_sequence {
+            let diff = (sequence - bridge_state.last_sequence) as usize;
+            shift_bitmap(&mut bridge_state.replay_bitmap, diff);
+            bridge_state.last_sequence = sequence;
+            set_bit(&mut bridge_state.replay_bitmap, 0);
+        } else {
+            let diff = (bridge_state.last_sequence - sequence) as usize;
+            set_bit(&mut bridge_state.replay_bitmap, diff);
+        }
 
         let bridge_config = &mut ctx.accounts.bridge_config;
         bridge_config.total_minted = bridge_config
@@ -129,8 +151,21 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
             burn_tx_hash: params.burn_tx_hash,
             recipient: ctx.accounts.recipient.key(),
             amount: params.amount,
-            timestamp: clock.unix_timestamp,
+            timestamp,
         });
+
+        // Close MintRecord and refund rent to payer
+        let dest_account_info = ctx.accounts.orchestrator.to_account_info();
+        let record_account_info = ctx.accounts.mint_record.to_account_info();
+
+        // Transfer lamports
+        let dest_lamports = dest_account_info.lamports();
+        **dest_account_info.try_borrow_mut_lamports()? = dest_lamports
+            .checked_add(record_account_info.lamports())
+            .unwrap();
+        **record_account_info.try_borrow_mut_lamports()? = 0;
+        
+        // No need to set data to empty, runtime handles it when lamports are 0
     }
 
     Ok(())
@@ -141,6 +176,7 @@ pub struct MintParams {
     pub burn_tx_hash: [u8; 32],
     pub mirage_sender: String,
     pub amount: u64,
+    pub sequence: u64,
 }
 
 #[derive(Accounts)]
@@ -173,6 +209,13 @@ pub struct MintTokens<'info> {
         bump = bridge_config.bump
     )]
     pub bridge_config: Account<'info, BridgeConfig>,
+
+    #[account(
+        mut,
+        seeds = [b"bridge_state"],
+        bump = bridge_state.bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
 
    #[account(
        init_if_needed,

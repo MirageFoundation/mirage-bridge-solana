@@ -49,4 +49,17 @@ pub enum BridgeError {
     EmptyValidatorSet,
     #[msg("Too many validators")]
     TooManyValidators,
+
+    // Close mint record errors
+    #[msg("Mint record not completed yet")]
+    MintNotCompleted,
+    #[msg("Cooldown period not elapsed (7 days after completion)")]
+    CooldownNotElapsed,
+    #[msg("Invalid timestamp")]
+    InvalidTimestamp,
+
+    #[msg("Transaction sequence too old")]
+    TransactionTooOld,
+    #[msg("Transaction already minted")]
+    AlreadyMinted,
 }

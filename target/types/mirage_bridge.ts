@@ -189,6 +189,45 @@ export type MirageBridge = {
       ]
     },
     {
+      "name": "closeMintRecord",
+      "docs": [
+        "Close a completed MintRecord to reclaim rent (~0.00383 SOL).",
+        "Can be called by anyone after 7 day cooldown period."
+      ],
+      "discriminator": [
+        153,
+        193,
+        204,
+        204,
+        250,
+        193,
+        63,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Anyone can trigger the close, but rent goes to original payer"
+          ],
+          "signer": true
+        },
+        {
+          "name": "mintRecord",
+          "writable": true
+        },
+        {
+          "name": "originalPayer",
+          "docs": [
+            "The original payer who created the record - receives rent back.",
+            "Constrained to match the payer stored in the record."
+          ],
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -934,6 +973,21 @@ export type MirageBridge = {
       "code": 6021,
       "name": "tooManyValidators",
       "msg": "Too many validators"
+    },
+    {
+      "code": 6022,
+      "name": "mintNotCompleted",
+      "msg": "Mint record not completed yet"
+    },
+    {
+      "code": 6023,
+      "name": "cooldownNotElapsed",
+      "msg": "Cooldown period not elapsed (7 days after completion)"
+    },
+    {
+      "code": 6024,
+      "name": "invalidTimestamp",
+      "msg": "Invalid timestamp"
     }
   ],
   "types": [
@@ -1193,6 +1247,13 @@ export type MirageBridge = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "payer",
+            "docs": [
+              "Who paid for this record (receives rent back on close)"
+            ],
+            "type": "pubkey"
+          },
           {
             "name": "burnTxHash",
             "type": {

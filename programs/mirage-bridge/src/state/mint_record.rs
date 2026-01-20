@@ -5,6 +5,8 @@ use crate::constants::MAX_ATTESTORS;
 #[account]
 #[derive(InitSpace)]
 pub struct MintRecord {
+    pub discriminator: [u8; 8],
+    pub payer: Pubkey,
     pub burn_tx_hash: [u8; 32],
     pub recipient: Pubkey,
     pub amount: u64,
@@ -14,10 +16,4 @@ pub struct MintRecord {
     pub completed: bool,
     pub completed_at: Option<i64>,
     pub bump: u8,
-}
-
-impl MintRecord {
-    pub fn has_attested(&self, orchestrator: &Pubkey) -> bool {
-        self.attestations.contains(orchestrator)
-    }
 }

@@ -1,12 +1,12 @@
 #![allow(unexpected_cfgs)]
 #![allow(clippy::result_large_err)]
 use anchor_lang::prelude::*;
-use instructions::initialize::*;
 use instructions::burn::*;
+use instructions::initialize::*;
 use instructions::mint::*;
-use instructions::update_validators::*;
 use instructions::pause::*;
 use instructions::unpause::*;
+use instructions::update_validators::*;
 
 declare_id!("2Qq27EibjxwgaV69WJst2Wxj3TS33DSVV42Gys9pDV8V");
 

@@ -3,7 +3,7 @@ use anchor_spl::token::Token;
 
 use crate::constants::BASIS_POINTS_DENOMINATOR;
 use crate::errors::BridgeError;
-use crate::state::{BridgeConfig, ValidatorRegistry};
+use crate::state::{BridgeConfig, BridgeState, ValidatorRegistry};
 
 pub fn initialize(ctx: Context<Initialize>, params: InitializeParams) -> Result<()> {
     require!(
@@ -30,6 +30,12 @@ pub fn initialize(ctx: Context<Initialize>, params: InitializeParams) -> Result<
     validator_registry.validators = Vec::new();
     validator_registry.total_voting_power = 0;
     validator_registry.bump = ctx.bumps.validator_registry;
+
+    let bridge_state = &mut ctx.accounts.bridge_state;
+    bridge_state.bump = ctx.bumps.bridge_state;
+    bridge_state.authority = ctx.accounts.authority.key();
+    bridge_state.last_sequence = 0;
+    bridge_state.replay_bitmap = [0; 8];
 
     Ok(())
 }
@@ -63,6 +69,15 @@ pub struct Initialize<'info> {
         bump
     )]
     pub validator_registry: Account<'info, ValidatorRegistry>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = BridgeState::LEN,
+        seeds = [b"bridge_state"],
+        bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
 
     #[account(
         init,

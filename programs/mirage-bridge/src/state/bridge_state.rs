@@ -4,7 +4,6 @@ use anchor_lang::prelude::*;
 pub struct BridgeState {
     pub bump: u8,
     pub authority: Pubkey,       // Who can update config
-    pub orchestrator: Pubkey,    // Who can mint
     pub last_sequence: u64,      // Highest sequence number seen
     // Bitmap for replay protection (window of 1024 transactions)
     // 0 = not processed, 1 = processed
@@ -13,6 +12,6 @@ pub struct BridgeState {
 }
 
 impl BridgeState {
-    // 8 + 1 + 32 + 32 + 8 + (16 * 8) = 8 + 1 + 32 + 32 + 8 + 128 = 209
-    pub const LEN: usize = 8 + 1 + 32 + 32 + 8 + 128;
+    // 8 (discriminator) + 1 (bump) + 32 (authority) + 8 (last_sequence) + 128 (replay_bitmap) = 177
+    pub const LEN: usize = 8 + 1 + 32 + 8 + 128;
 }

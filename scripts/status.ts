@@ -1,5 +1,5 @@
 import { setupFromEnv } from "./common/config";
-import { getBridgeConfigPDA, getValidatorRegistryPDA, getMintPDA, logPDAs } from "./common/pda";
+import { getBridgeConfigPDA, getBridgeStatePDA, getValidatorRegistryPDA, getMintPDA, logPDAs } from "./common/pda";
 import { formatAmount, shortPubkey } from "./common/utils";
 
 async function main() {
@@ -11,6 +11,7 @@ async function main() {
 
   const [bridgeConfig] = getBridgeConfigPDA();
   const [validatorRegistry] = getValidatorRegistryPDA();
+  const [bridgeState] = getBridgeStatePDA();
   const [tokenMint] = getMintPDA();
 
   const configExists = await connection.getAccountInfo(bridgeConfig);
@@ -21,6 +22,7 @@ async function main() {
 
   const config = await program.account.bridgeConfig.fetch(bridgeConfig);
   const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
+  const state = await program.account.bridgeState.fetch(bridgeState);
 
   console.log(`\nBridge Config:`);
   console.log(`  Authority: ${config.authority.toBase58()}`);
@@ -33,6 +35,9 @@ async function main() {
   console.log(`  Total Minted: ${formatAmount(config.totalMinted)} MIRAGE`);
   console.log(`  Total Burned: ${formatAmount(config.totalBurned)} MIRAGE`);
   console.log(`  Burn Nonce: ${config.burnNonce.toNumber()}`);
+
+  console.log(`\nReplay Protection:`);
+  console.log(`  Last Sequence: ${state.lastSequence.toNumber()}`);
 
   console.log(`\nValidator Registry:`);
   console.log(`  Total Validators: ${registry.validators.length}`);

@@ -4,7 +4,7 @@ import BN from "bn.js";
 import * as ed from "@noble/ed25519";
 import { sha512 } from "@noble/hashes/sha2.js";
 import { setupFromEnv, loadKeypair } from "./common/config";
-import { getBridgeConfigPDA, getMintPDA, getValidatorRegistryPDA, getMintRecordPDA, logPDAs } from "./common/pda";
+import { getBridgeConfigPDA, getBridgeStatePDA, getMintPDA, getValidatorRegistryPDA, getMintRecordPDA, logPDAs } from "./common/pda";
 import { confirmTx, formatAmount, parseAmount, buildAttestationPayload, hexToBuffer } from "./common/utils";
 
 ed.hashes.sha512 = sha512;
@@ -20,6 +20,7 @@ async function main() {
   const mirageSender = process.env.MIRAGE_SENDER;
   const recipientPubkey = process.env.RECIPIENT;
   const amountStr = process.env.AMOUNT;
+  const sequenceStr = process.env.SEQUENCE;
 
   if (!burnTxHashHex) {
     console.log("❌ BURN_TX_HASH env var required (32-byte hex)");
@@ -41,6 +42,11 @@ async function main() {
     process.exit(1);
   }
 
+  if (!sequenceStr) {
+    console.log("❌ SEQUENCE env var required (u64, monotonically increasing)");
+    process.exit(1);
+  }
+
   const burnTxHash = hexToBuffer(burnTxHashHex);
   if (burnTxHash.length !== 32) {
     console.log(`❌ BURN_TX_HASH must be 32 bytes (got ${burnTxHash.length})`);
@@ -48,9 +54,11 @@ async function main() {
   }
 
   const amount = parseAmount(amountStr);
+  const sequence = new BN(sequenceStr);
   const recipient = new PublicKey(recipientPubkey);
 
   const [bridgeConfig] = getBridgeConfigPDA();
+  const [bridgeState] = getBridgeStatePDA();
   const [tokenMint] = getMintPDA();
   const [validatorRegistry] = getValidatorRegistryPDA();
   const [mintRecord] = getMintRecordPDA(burnTxHash);
@@ -78,12 +86,7 @@ async function main() {
   }
 
   const existingRecord = await program.account.mintRecord.fetch(mintRecord).catch(() => null);
-  if (existingRecord?.completed) {
-    console.log("❌ Mint already completed for this burn tx!");
-    console.log(`  Recipient: ${existingRecord.recipient.toBase58()}`);
-    console.log(`  Amount: ${formatAmount(existingRecord.amount)} MIRAGE`);
-    process.exit(1);
-  }
+  const mintRecordPayer = existingRecord?.payer ?? wallet.publicKey;
 
   const recipientTokenAccount = getAssociatedTokenAddressSync(tokenMint, recipient, true);
 
@@ -111,13 +114,16 @@ async function main() {
       burnTxHash: Array.from(burnTxHash),
       mirageSender,
       amount,
+      sequence,
     })
     .accounts({
       orchestrator: wallet.publicKey,
       recipient,
+      mintRecordPayer,
       recipientTokenAccount,
       tokenMint,
       bridgeConfig,
+      bridgeState,
       mintRecord,
       validatorRegistry,
       instructionsSysvar: new PublicKey("Sysvar1nstructions1111111111111111111111111"),
@@ -135,20 +141,19 @@ async function main() {
   console.log(`✅ Attestation submitted!`);
   console.log(`  Transaction: ${tx}`);
 
-  const record = await program.account.mintRecord.fetch(mintRecord);
+  const record = await program.account.mintRecord.fetch(mintRecord).catch(() => null);
+  if (!record) {
+    console.log(`\n🎉 Threshold reached! MintRecord closed (rent refunded).`);
+    return;
+  }
+
   console.log(`\nMint Record:`);
   console.log(`  Attestations: ${record.attestations.length}`);
   console.log(`  Attested Power: ${record.attestedPower.toNumber()}`);
-  console.log(`  Completed: ${record.completed}`);
-  
-  if (record.completed) {
-    console.log(`\n🎉 Threshold reached! Tokens minted.`);
-  } else {
-    const threshold = config.attestationThreshold.toNumber();
-    const required = Math.ceil((registry.totalVotingPower.toNumber() * threshold) / 10000);
-    console.log(`  Required Power: ${required} (${threshold / 100}% of ${registry.totalVotingPower.toNumber()})`);
-    console.log(`  Remaining: ${required - record.attestedPower.toNumber()}`);
-  }
+  const threshold = config.attestationThreshold.toNumber();
+  const required = Math.ceil((registry.totalVotingPower.toNumber() * threshold) / 10000);
+  console.log(`  Required Power: ${required} (${threshold / 100}% of ${registry.totalVotingPower.toNumber()})`);
+  console.log(`  Remaining: ${required - record.attestedPower.toNumber()}`);
 }
 
 main().catch((err) => {

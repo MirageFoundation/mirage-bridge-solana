@@ -23,6 +23,13 @@ export function getMintPDA(): [PublicKey, number] {
   );
 }
 
+export function getBridgeStatePDA(): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("bridge_state")],
+    PROGRAM_ID
+  );
+}
+
 export function getMintRecordPDA(burnTxHash: Buffer): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("mint_record"), burnTxHash],
@@ -41,9 +48,11 @@ export function logPDAs() {
   const [bridgeConfig] = getBridgeConfigPDA();
   const [validatorRegistry] = getValidatorRegistryPDA();
   const [tokenMint] = getMintPDA();
+  const [bridgeState] = getBridgeStatePDA();
 
   console.log("PDAs:");
   console.log(`  Bridge Config: ${bridgeConfig.toBase58()}`);
+  console.log(`  Bridge State: ${bridgeState.toBase58()}`);
   console.log(`  Validator Registry: ${validatorRegistry.toBase58()}`);
   console.log(`  Token Mint: ${tokenMint.toBase58()}`);
 }

@@ -62,8 +62,6 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         mint_record.amount = params.amount;
         mint_record.attestations = Vec::new();
         mint_record.attested_power = 0;
-        mint_record.completed = false;
-        mint_record.completed_at = None;
         mint_record.bump = ctx.bumps.mint_record;
     } else {
         require!(
@@ -154,9 +152,14 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
             timestamp,
         });
 
-        // Close MintRecord and refund rent to payer
-        let dest_account_info = ctx.accounts.orchestrator.to_account_info();
-        let record_account_info = ctx.accounts.mint_record.to_account_info();
+        // Close MintRecord and refund rent to original payer
+        require!(
+            mint_record.payer == ctx.accounts.mint_record_payer.key(),
+            BridgeError::Unauthorized
+        );
+
+        let dest_account_info = ctx.accounts.mint_record_payer.to_account_info();
+        let record_account_info = mint_record.to_account_info();
 
         // Transfer lamports
         let dest_lamports = dest_account_info.lamports();
@@ -187,6 +190,10 @@ pub struct MintTokens<'info> {
 
     /// CHECK: Recipient wallet, no constraints needed
     pub recipient: AccountInfo<'info>,
+
+    /// CHECK: Payer that funded MintRecord (rent refund target)
+    #[account(mut)]
+    pub mint_record_payer: AccountInfo<'info>,
 
     #[account(
         init_if_needed,

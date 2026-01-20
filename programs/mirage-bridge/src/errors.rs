@@ -28,8 +28,6 @@ pub enum BridgeError {
     RecipientMismatch,
     #[msg("Amount mismatch with existing record")]
     AmountMismatch,
-    #[msg("Already attested")]
-    AlreadyAttested,
     #[msg("Too many attestors")]
     TooManyAttestors,
     #[msg("Power overflow")]
@@ -40,8 +38,6 @@ pub enum BridgeError {
     SignaturePubkeyMismatch,
     #[msg("Signature message mismatch")]
     SignatureMessageMismatch,
-    #[msg("Already completed")]
-    AlreadyCompleted,
 
     #[msg("Unauthorized")]
     Unauthorized,
@@ -50,16 +46,9 @@ pub enum BridgeError {
     #[msg("Too many validators")]
     TooManyValidators,
 
-    // Close mint record errors
-    #[msg("Mint record not completed yet")]
-    MintNotCompleted,
-    #[msg("Cooldown period not elapsed (7 days after completion)")]
-    CooldownNotElapsed,
-    #[msg("Invalid timestamp")]
-    InvalidTimestamp,
-
-    #[msg("Transaction sequence too old")]
+    // Replay protection errors
+    #[msg("Transaction sequence too old (outside 1024-tx window)")]
     TransactionTooOld,
-    #[msg("Transaction already minted")]
+    #[msg("Transaction already minted (replay detected)")]
     AlreadyMinted,
 }

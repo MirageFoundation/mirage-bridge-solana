@@ -183,45 +183,6 @@
       ]
     },
     {
-      "name": "close_mint_record",
-      "docs": [
-        "Close a completed MintRecord to reclaim rent (~0.00383 SOL).",
-        "Can be called by anyone after 7 day cooldown period."
-      ],
-      "discriminator": [
-        153,
-        193,
-        204,
-        204,
-        250,
-        193,
-        63,
-        133
-      ],
-      "accounts": [
-        {
-          "name": "caller",
-          "docs": [
-            "Anyone can trigger the close, but rent goes to original payer"
-          ],
-          "signer": true
-        },
-        {
-          "name": "mint_record",
-          "writable": true
-        },
-        {
-          "name": "original_payer",
-          "docs": [
-            "The original payer who created the record - receives rent back.",
-            "Constrained to match the payer stored in the record."
-          ],
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -297,6 +258,31 @@
           }
         },
         {
+          "name": "bridge_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "token_mint",
           "writable": true,
           "pda": {
@@ -353,6 +339,10 @@
         },
         {
           "name": "recipient"
+        },
+        {
+          "name": "mint_record_payer",
+          "writable": true
         },
         {
           "name": "recipient_token_account",
@@ -482,6 +472,31 @@
                   102,
                   105,
                   103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bridge_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -751,6 +766,19 @@
       ]
     },
     {
+      "name": "BridgeState",
+      "discriminator": [
+        6,
+        190,
+        226,
+        198,
+        76,
+        100,
+        157,
+        198
+      ]
+    },
+    {
       "name": "BurnRecord",
       "discriminator": [
         27,
@@ -920,68 +948,53 @@
     },
     {
       "code": 6012,
-      "name": "AlreadyAttested",
-      "msg": "Already attested"
-    },
-    {
-      "code": 6013,
       "name": "TooManyAttestors",
       "msg": "Too many attestors"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "PowerOverflow",
       "msg": "Power overflow"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "InvalidSignatureInstruction",
       "msg": "Invalid Ed25519 signature instruction"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "SignaturePubkeyMismatch",
       "msg": "Signature pubkey mismatch"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "SignatureMessageMismatch",
       "msg": "Signature message mismatch"
     },
     {
-      "code": 6018,
-      "name": "AlreadyCompleted",
-      "msg": "Already completed"
-    },
-    {
-      "code": 6019,
+      "code": 6017,
       "name": "Unauthorized",
       "msg": "Unauthorized"
     },
     {
-      "code": 6020,
+      "code": 6018,
       "name": "EmptyValidatorSet",
       "msg": "Validator set cannot be empty"
     },
     {
-      "code": 6021,
+      "code": 6019,
       "name": "TooManyValidators",
       "msg": "Too many validators"
     },
     {
-      "code": 6022,
-      "name": "MintNotCompleted",
-      "msg": "Mint record not completed yet"
+      "code": 6020,
+      "name": "TransactionTooOld",
+      "msg": "Transaction sequence too old (outside 1024-tx window)"
     },
     {
-      "code": 6023,
-      "name": "CooldownNotElapsed",
-      "msg": "Cooldown period not elapsed (7 days after completion)"
-    },
-    {
-      "code": 6024,
-      "name": "InvalidTimestamp",
-      "msg": "Invalid timestamp"
+      "code": 6021,
+      "name": "AlreadyMinted",
+      "msg": "Transaction already minted (replay detected)"
     }
   ],
   "types": [
@@ -1041,6 +1054,35 @@
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BridgeState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "last_sequence",
+            "type": "u64"
+          },
+          {
+            "name": "replay_bitmap",
+            "type": {
+              "array": [
+                "u128",
+                8
+              ]
+            }
           }
         ]
       }
@@ -1232,6 +1274,10 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "sequence",
+            "type": "u64"
           }
         ]
       }
@@ -1243,9 +1289,6 @@
         "fields": [
           {
             "name": "payer",
-            "docs": [
-              "Who paid for this record (receives rent back on close)"
-            ],
             "type": "pubkey"
           },
           {
@@ -1274,16 +1317,6 @@
           {
             "name": "attested_power",
             "type": "u64"
-          },
-          {
-            "name": "completed",
-            "type": "bool"
-          },
-          {
-            "name": "completed_at",
-            "type": {
-              "option": "i64"
-            }
           },
           {
             "name": "bump",

@@ -189,45 +189,6 @@ export type MirageBridge = {
       ]
     },
     {
-      "name": "closeMintRecord",
-      "docs": [
-        "Close a completed MintRecord to reclaim rent (~0.00383 SOL).",
-        "Can be called by anyone after 7 day cooldown period."
-      ],
-      "discriminator": [
-        153,
-        193,
-        204,
-        204,
-        250,
-        193,
-        63,
-        133
-      ],
-      "accounts": [
-        {
-          "name": "caller",
-          "docs": [
-            "Anyone can trigger the close, but rent goes to original payer"
-          ],
-          "signer": true
-        },
-        {
-          "name": "mintRecord",
-          "writable": true
-        },
-        {
-          "name": "originalPayer",
-          "docs": [
-            "The original payer who created the record - receives rent back.",
-            "Constrained to match the payer stored in the record."
-          ],
-          "writable": true
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -303,6 +264,31 @@ export type MirageBridge = {
           }
         },
         {
+          "name": "bridgeState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "tokenMint",
           "writable": true,
           "pda": {
@@ -359,6 +345,10 @@ export type MirageBridge = {
         },
         {
           "name": "recipient"
+        },
+        {
+          "name": "mintRecordPayer",
+          "writable": true
         },
         {
           "name": "recipientTokenAccount",
@@ -488,6 +478,31 @@ export type MirageBridge = {
                   102,
                   105,
                   103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bridgeState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
                 ]
               }
             ]
@@ -757,6 +772,19 @@ export type MirageBridge = {
       ]
     },
     {
+      "name": "bridgeState",
+      "discriminator": [
+        6,
+        190,
+        226,
+        198,
+        76,
+        100,
+        157,
+        198
+      ]
+    },
+    {
       "name": "burnRecord",
       "discriminator": [
         27,
@@ -926,68 +954,53 @@ export type MirageBridge = {
     },
     {
       "code": 6012,
-      "name": "alreadyAttested",
-      "msg": "Already attested"
-    },
-    {
-      "code": 6013,
       "name": "tooManyAttestors",
       "msg": "Too many attestors"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "powerOverflow",
       "msg": "Power overflow"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "invalidSignatureInstruction",
       "msg": "Invalid Ed25519 signature instruction"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "signaturePubkeyMismatch",
       "msg": "Signature pubkey mismatch"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "signatureMessageMismatch",
       "msg": "Signature message mismatch"
     },
     {
-      "code": 6018,
-      "name": "alreadyCompleted",
-      "msg": "Already completed"
-    },
-    {
-      "code": 6019,
+      "code": 6017,
       "name": "unauthorized",
       "msg": "unauthorized"
     },
     {
-      "code": 6020,
+      "code": 6018,
       "name": "emptyValidatorSet",
       "msg": "Validator set cannot be empty"
     },
     {
-      "code": 6021,
+      "code": 6019,
       "name": "tooManyValidators",
       "msg": "Too many validators"
     },
     {
-      "code": 6022,
-      "name": "mintNotCompleted",
-      "msg": "Mint record not completed yet"
+      "code": 6020,
+      "name": "transactionTooOld",
+      "msg": "Transaction sequence too old (outside 1024-tx window)"
     },
     {
-      "code": 6023,
-      "name": "cooldownNotElapsed",
-      "msg": "Cooldown period not elapsed (7 days after completion)"
-    },
-    {
-      "code": 6024,
-      "name": "invalidTimestamp",
-      "msg": "Invalid timestamp"
+      "code": 6021,
+      "name": "alreadyMinted",
+      "msg": "Transaction already minted (replay detected)"
     }
   ],
   "types": [
@@ -1047,6 +1060,35 @@ export type MirageBridge = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bridgeState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "lastSequence",
+            "type": "u64"
+          },
+          {
+            "name": "replayBitmap",
+            "type": {
+              "array": [
+                "u128",
+                8
+              ]
+            }
           }
         ]
       }
@@ -1238,6 +1280,10 @@ export type MirageBridge = {
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "sequence",
+            "type": "u64"
           }
         ]
       }
@@ -1249,9 +1295,6 @@ export type MirageBridge = {
         "fields": [
           {
             "name": "payer",
-            "docs": [
-              "Who paid for this record (receives rent back on close)"
-            ],
             "type": "pubkey"
           },
           {
@@ -1280,16 +1323,6 @@ export type MirageBridge = {
           {
             "name": "attestedPower",
             "type": "u64"
-          },
-          {
-            "name": "completed",
-            "type": "bool"
-          },
-          {
-            "name": "completedAt",
-            "type": {
-              "option": "i64"
-            }
           },
           {
             "name": "bump",

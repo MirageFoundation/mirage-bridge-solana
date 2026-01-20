@@ -2,7 +2,7 @@ import { SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import { setupFromEnv } from "./common/config";
-import { getBridgeConfigPDA, getValidatorRegistryPDA, getMintPDA, logPDAs } from "./common/pda";
+import { getBridgeConfigPDA, getBridgeStatePDA, getValidatorRegistryPDA, getMintPDA, logPDAs } from "./common/pda";
 import { confirmTx } from "./common/utils";
 
 async function main() {
@@ -14,6 +14,7 @@ async function main() {
 
   const [bridgeConfig] = getBridgeConfigPDA();
   const [validatorRegistry] = getValidatorRegistryPDA();
+  const [bridgeState] = getBridgeStatePDA();
   const [tokenMint] = getMintPDA();
 
   const existingConfig = await connection.getAccountInfo(bridgeConfig);
@@ -45,6 +46,7 @@ async function main() {
     .accounts({
       authority: wallet.publicKey,
       bridgeConfig,
+      bridgeState,
       validatorRegistry,
       tokenMint,
       systemProgram: SystemProgram.programId,

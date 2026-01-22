@@ -110,7 +110,7 @@ async function main() {
   const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
   console.log(`\nValidator Registry:`);
   console.log(`  Count: ${registry.validators.length}`);
-  console.log(`  Total Stake: ${registry.totalStake.toNumber()}`);
+  console.log(`  Total Stake: ${registry.totalStake.toString()}`);
 }
 
 main().catch((err) => {

@@ -1,5 +1,5 @@
 {
-  "address": "6wtbfpW7VBnzENZSbTLmRiTfQdCrn3ADk9B2hDNM9ruq",
+  "address": "7S1LUgYbQ3Z3GcrymJ9L8G2PRti3o1XJyaSfh4X4avHX",
   "metadata": {
     "name": "mirage_bridge",
     "version": "0.1.0",
@@ -1357,7 +1357,7 @@
             "type": "string"
           },
           {
-            "name": "voting_power",
+            "name": "stake",
             "type": "u64"
           }
         ]
@@ -1379,7 +1379,7 @@
             }
           },
           {
-            "name": "total_voting_power",
+            "name": "total_stake",
             "type": "u64"
           },
           {

@@ -7,7 +7,7 @@ import IDL from "../../target/idl/mirage_bridge.json";
 
 export type Network = "localnet" | "devnet" | "mainnet";
 
-export const PROGRAM_ID = new PublicKey("6wtbfpW7VBnzENZSbTLmRiTfQdCrn3ADk9B2hDNM9ruq");
+export const PROGRAM_ID = new PublicKey("7S1LUgYbQ3Z3GcrymJ9L8G2PRti3o1XJyaSfh4X4avHX");
 
 export const RPC_URLS: Record<Network, string> = {
   localnet: "http://127.0.0.1:8899",

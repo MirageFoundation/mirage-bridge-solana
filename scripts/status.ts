@@ -41,13 +41,16 @@ async function main() {
 
   console.log(`\nValidator Registry:`);
   console.log(`  Total Validators: ${registry.validators.length}`);
-  console.log(`  Total Stake: ${registry.totalStake.toNumber()}`);
+  console.log(`  Total Stake: ${registry.totalStake.toString()}`);
   
   if (registry.validators.length > 0) {
     console.log(`\n  Validators:`);
     for (const v of registry.validators) {
-      const stakePercent = ((v.stake.toNumber() / registry.totalStake.toNumber()) * 100).toFixed(2);
-      console.log(`    - ${shortPubkey(v.orchestratorPubkey)} | ${v.mirageValidator} | ${v.stake.toNumber()} (${stakePercent}%)`);
+      // Use BN division for percentage to avoid overflow
+      const stakeBN = v.stake;
+      const totalBN = registry.totalStake;
+      const percent = stakeBN.muln(10000).div(totalBN).toNumber() / 100;
+      console.log(`    - ${shortPubkey(v.orchestratorPubkey)} | ${v.mirageValidator} | ${v.stake.toString()} (${percent.toFixed(2)}%)`);
     }
   }
 

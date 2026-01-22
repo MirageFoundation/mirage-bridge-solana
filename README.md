@@ -1,12 +1,69 @@
 # Mirage Bridge - Solana Program
 
-Bridges MIRAGE tokens between Mirage blockchain and Solana using validator attestation (2/3 threshold).
+Bridges MIRAGE tokens between Mirage blockchain and Solana using validator attestation.
 
 ## Overview
 
+Both directions require **2/3 validator voting power** to confirm a transfer.
+
+### Inbound: Solana → Mirage
+
 ```
-Solana → Mirage: User burns on Solana → Orchestrators attest on Mirage → Mirage mints
-Mirage → Solana: User burns on Mirage → Orchestrators submit Ed25519 sigs → 2/3 threshold → Solana mints
+┌──────────┐     ┌──────────┐     ┌─────────────────┐     ┌──────────┐
+│  User    │     │  Solana  │     │  Orchestrators  │     │  Mirage  │
+│  Wallet  │     │  Program │     │   (validators)  │     │  Chain   │
+└────┬─────┘     └────┬─────┘     └───────┬─────────┘     └────┬─────┘
+     │                │                   │                    │
+     │  1. Burn       │                   │                    │
+     │───────────────>│                   │                    │
+     │                │                   │                    │
+     │                │  2. Detect burn   │                    │
+     │                │──────────────────>│                    │
+     │                │                   │                    │
+     │                │                   │  3. Each validator │
+     │                │                   │  submits attestation
+     │                │                   │───────────────────>│
+     │                │                   │                    │
+     │                │                   │         4. Accumulate
+     │                │                   │            attestations
+     │                │                   │                    │
+     │                │                   │         5. 2/3 threshold
+     │                │                   │            reached?
+     │                │                   │            ─────────
+     │                │                   │            YES → Mint
+     │                │                   │                    │
+     │<───────────────│───────────────────│────────────────────│
+     │                     6. MIRAGE arrives in Mirage wallet  │
+```
+
+### Outbound: Mirage → Solana
+
+```
+┌──────────┐     ┌──────────┐     ┌─────────────────┐     ┌──────────┐
+│  User    │     │  Mirage  │     │  Orchestrators  │     │  Solana  │
+│  Wallet  │     │  Chain   │     │   (validators)  │     │  Program │
+└────┬─────┘     └────┬─────┘     └───────┬─────────┘     └────┬─────┘
+     │                │                   │                    │
+     │  1. Burn       │                   │                    │
+     │───────────────>│                   │                    │
+     │                │                   │                    │
+     │                │  2. Detect burn   │                    │
+     │                │──────────────────>│                    │
+     │                │                   │                    │
+     │                │                   │  3. Each validator │
+     │                │                   │  submits Ed25519 sig
+     │                │                   │───────────────────>│
+     │                │                   │                    │
+     │                │                   │         4. Accumulate
+     │                │                   │            signatures
+     │                │                   │                    │
+     │                │                   │         5. 2/3 threshold
+     │                │                   │            reached?
+     │                │                   │            ─────────
+     │                │                   │            YES → Mint
+     │                │                   │                    │
+     │<───────────────│───────────────────│────────────────────│
+     │                     6. MIRAGE arrives in Solana wallet  │
 ```
 
 **Program ID (Devnet):** `9rMS8JEHCM5UTGjwKoXV7V32tzkgM9b16LZcbVdPAMdp`  

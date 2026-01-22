@@ -158,15 +158,14 @@ The Solana bridge needs to know which Solana pubkeys are authorized to submit mi
 │  Mirage Validator Node                    Solana Bridge Program          │
 │  ─────────────────────                    ─────────────────────          │
 │                                                                          │
-│  1. Run setup_orchestrator.py             3. Register in validator       │
+│  1. Run setup_orchestrator.py             2. Register in validator       │
 │     → Creates Solana keypair                 registry with:              │
-│     → ~/.mirage/orchestrator/                - Solana pubkey             │
-│        solana-keypair.json                   - Mirage valoper address    │
+│     → Outputs pubkey                         - Solana pubkey             │
+│     → Waits for funding                      - Mirage valoper address    │
 │                                              - Voting power              │
-│  2. Get pubkey:                                                          │
-│     solana-keygen pubkey                  4. Now this orchestrator       │
-│       ~/.mirage/orchestrator/                can submit attestations     │
-│       solana-keypair.json                                                │
+│  Share pubkey with bridge deployer                                       │
+│                                           3. Orchestrator can now        │
+│                                              submit attestations         │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```

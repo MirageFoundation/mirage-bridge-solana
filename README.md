@@ -93,22 +93,34 @@ All commands run inside Docker. Keypairs persist on host at `~/.config/solana/`.
 solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
 solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
 
-# 3. Fund authority (devnet)
+# 3. Fund authority (devnet - free airdrop)
 solana airdrop 5
 
-# 4. Build & deploy
+# 4. Build & deploy (~2.5 SOL for program deployment)
 ./build.sh
 anchor deploy
 
-# 5. Initialize bridge
+# 5. Initialize bridge (~0.05 SOL for account creation)
 bun run bridge:init
 
-# 6. Register validators
+# 6. Register validators (~0.01 SOL)
 VALIDATORS_FILE=scripts/wallets/validators.json bun run bridge:validators
 
 # 7. Verify
 bun run bridge:status
 ```
+
+### SOL Cost Summary
+
+| Step | Devnet | Mainnet |
+|------|--------|---------|
+| Program deployment | ~2.5 SOL | ~2.5 SOL |
+| Initialize bridge | ~0.05 SOL | ~0.05 SOL |
+| Register validators | ~0.01 SOL | ~0.01 SOL |
+| **Total (initial)** | **~2.6 SOL** | **~2.6 SOL** |
+| Upgrade (later) | ~0.01 SOL | ~0.01 SOL |
+
+Devnet SOL is free via `solana airdrop`. Mainnet requires real SOL.
 
 ---
 
@@ -142,28 +154,44 @@ Two keypairs stored at `~/.config/solana/` (mounted from host, persists across c
 solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
 solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
 
-# Fund authority
+# Fund authority (free on devnet, need ~3 SOL total)
 solana airdrop 5
 
 # Build (updates program ID in all files)
 ./build.sh
 
-# Deploy
+# Deploy program (~2.5 SOL)
 anchor deploy
 
-# Initialize bridge
+# Initialize bridge (~0.05 SOL - creates config, state, registry, mint accounts)
 bun run bridge:init
 
-# Register validators (test wallets or your own)
+# Register validators (~0.01 SOL)
 VALIDATORS_FILE=scripts/wallets/validators.json bun run bridge:validators
 
 # Verify
 bun run bridge:status
 ```
 
+### What Gets Deployed
+
+When you run `anchor deploy`, two things are created:
+
+1. **Program account** - The actual executable code (your program ID)
+2. **IDL account** - Stores the program's interface definition (instructions, accounts, types)
+
+```
+Program Id: 9rMS8JEHCM5UTGjwKoXV7V32tzkgM9b16LZcbVdPAMdp    ← Your program
+Idl account: EcUihngJEvngH1Ruh2o1rvrnGZZks7NCycw7ZrmCFw28   ← Metadata for clients
+```
+
+The **IDL (Interface Definition Language)** is like an ABI in Ethereum - it describes how to interact with the program. Anchor stores it on-chain so clients can discover the program's interface without needing the IDL file locally. The IDL account is a PDA derived from your program ID.
+
 ---
 
 ## Deploy to Mainnet
+
+**Requires ~3 SOL** in authority wallet before starting.
 
 ```bash
 # Start container
@@ -173,15 +201,17 @@ bun run bridge:status
 
 # Check authority balance (need ~3 SOL)
 solana balance
+# If insufficient, transfer SOL to this address:
+solana-keygen pubkey ~/.config/solana/mirage-bridge-authority.json
 
-# Build & deploy
+# Build & deploy (~2.5 SOL)
 ./build.sh
 anchor deploy
 
-# Initialize
+# Initialize (~0.05 SOL)
 bun run bridge:init
 
-# Register production validators
+# Register production validators (~0.01 SOL)
 VALIDATORS_FILE=production-validators.json bun run bridge:validators
 
 # Verify
@@ -213,41 +243,14 @@ State is preserved. Only program code changes.
 
 ---
 
-## Testing
-
-All tests run inside Docker.
-
-### Unit Tests
+## Testing (E2E)
 
 ```bash
 ./docker.sh start devnet
 
 # Inside container:
-bun test
-```
-
-### E2E Test (Localnet)
-
-```bash
-./docker.sh start devnet
-
-# Inside container:
-# Terminal 1 - start local validator
-solforge
-
-# Terminal 2 (docker exec into same container)
-bun run bridge:setup
-bun run bridge:e2e
-```
-
-### E2E Test (Devnet)
-
-```bash
-./docker.sh start devnet
-
-# Inside container:
-bun run bridge:setup
-bun run bridge:e2e
+bun run bridge:setup   # Initialize + register validators + fund wallets
+bun run bridge:e2e     # Run full mint + burn test
 ```
 
 ---
@@ -291,8 +294,9 @@ ORCHESTRATOR_SOLANA_CONFIRMATIONS=32
 ```bash
 python3 deploy/setup_orchestrator.py
 # Generates ~/.mirage/orchestrator/solana-keypair.json
-# Fund with ~0.1 SOL for tx fees
 ```
+
+**Fund each orchestrator wallet with ~0.1 SOL** for transaction fees (~0.000005 SOL per mint attestation).
 
 ### Register on Solana
 

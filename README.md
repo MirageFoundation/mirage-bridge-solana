@@ -73,171 +73,122 @@ Both directions require **2/3 validator voting power** to confirm a transfer.
 
 ## Prerequisites
 
-### Option A: Docker (Recommended)
-
 ```bash
-docker --version
-```
-
-### Option B: Native Install
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-cargo install --git https://github.com/coral-xyz/anchor avm --force
-avm install 0.32.0 && avm use 0.32.0
-curl -fsSL https://bun.sh/install | bash
+docker --version   # Docker required
 ```
 
 ---
 
-## First-Time Setup
+## Quick Start (Devnet)
 
-### 1. Generate Keypairs
+All commands run inside Docker. Keypairs persist on host at `~/.config/solana/`.
 
-Two keypairs are needed:
+```bash
+# 1. Start Docker container
+./docker.sh start devnet
+
+# All remaining commands are inside the container:
+
+# 2. Generate keypairs (first time only)
+solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
+solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
+
+# 3. Fund authority (devnet)
+solana airdrop 5
+
+# 4. Build & deploy
+./build.sh
+anchor deploy
+
+# 5. Initialize bridge
+bun run bridge:init
+
+# 6. Register validators
+VALIDATORS_FILE=scripts/wallets/validators.json bun run bridge:validators
+
+# 7. Verify
+bun run bridge:status
+```
+
+---
+
+## Keypairs
+
+Two keypairs stored at `~/.config/solana/` (mounted from host, persists across containers):
 
 | Keypair | Purpose | When Needed |
 |---------|---------|-------------|
-| **Authority** | Pays for deployment, upgrade authority, bridge admin | Always (for upgrades and admin ops) |
-| **Program** | Determines program address (public key = program ID) | Only during **initial** deployment |
-
-```bash
-# Authority keypair - KEEP THIS, needed for upgrades and admin
-solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
-
-# Program keypair - only needed for initial deploy
-solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
-
-# View addresses
-solana-keygen pubkey ~/.config/solana/mirage-bridge-authority.json
-solana-keygen pubkey ~/.config/solana/mirage-bridge-program.json
-```
+| `mirage-bridge-authority.json` | Pays for deployment, upgrade authority, bridge admin | **Always** - keep this safe |
+| `mirage-bridge-program.json` | Determines program address (public key = program ID) | Only during **initial** deployment |
 
 **About the program keypair:**
 - The **public key** becomes your permanent program ID
-- The **private key** is only used once during `anchor deploy` to prove ownership of that address
-- After initial deployment, upgrades use the **authority keypair**, not the program keypair
-- If you lose the program keypair after deploying, you can still upgrade (authority controls that)
-- **Devnet:** Feel free to generate a new one anytime - you'll just get a new program address
-- **Mainnet:** Back it up in case you ever need to prove original deployment, but it's not strictly required after deploy
-
-### 2. Fund Authority Wallet
-
-```bash
-# Devnet (free)
-solana config set --url devnet
-solana airdrop 5 ~/.config/solana/mirage-bridge-authority.json
-
-# Mainnet (requires SOL - transfer ~3 SOL to authority address)
-solana config set --url mainnet-beta
-```
-
-### 3. Install Dependencies
-
-```bash
-bun install
-```
-
----
-
-## Build
-
-### Using Docker
-
-```bash
-./docker.sh start devnet
-# Inside container:
-./build.sh
-```
-
-### Native
-
-```bash
-./build.sh
-```
-
-`build.sh` reads the program ID from your keypair and updates `lib.rs`, `Anchor.toml`, and `config.ts`.
+- The **private key** is only used once during `anchor deploy`
+- After initial deployment, upgrades use the **authority keypair**
+- **Devnet:** Regenerate anytime for a new program address
+- **Mainnet:** Back it up, but not strictly required after deploy
 
 ---
 
 ## Deploy to Devnet
 
-### Step 1: Build & Deploy Program
-
 ```bash
-# Docker
+# Start container
 ./docker.sh start devnet
+
+# Inside container:
+
+# Generate keypairs (skip if already exist)
+solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
+solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
+
+# Fund authority
+solana airdrop 5
+
+# Build (updates program ID in all files)
 ./build.sh
-anchor deploy --provider.cluster devnet
 
-# Native
-solana config set --url devnet
-./build.sh
-anchor deploy --provider.cluster devnet
-```
+# Deploy
+anchor deploy
 
-### Step 2: Initialize Bridge
+# Initialize bridge
+bun run bridge:init
 
-```bash
-NETWORK=devnet bun run bridge:init
-```
+# Register validators (test wallets or your own)
+VALIDATORS_FILE=scripts/wallets/validators.json bun run bridge:validators
 
-### Step 3: Register Validators
-
-```bash
-# Using test wallets
-NETWORK=devnet VALIDATORS_FILE=scripts/wallets/validators.json bun run bridge:validators
-
-# Or create your own:
-cat > my-validators.json << 'EOF'
-[
-  {"orchestratorPubkey": "SolanaPubkey1...", "mirageValidator": "miragevaloper1...", "votingPower": 3334},
-  {"orchestratorPubkey": "SolanaPubkey2...", "mirageValidator": "miragevaloper1...", "votingPower": 3333},
-  {"orchestratorPubkey": "SolanaPubkey3...", "mirageValidator": "miragevaloper1...", "votingPower": 3333}
-]
-EOF
-NETWORK=devnet VALIDATORS_FILE=my-validators.json bun run bridge:validators
-```
-
-**Note:** Voting power should sum to 10000 (100%). 2/3 threshold = 6667.
-
-### Step 4: Verify
-
-```bash
-NETWORK=devnet bun run bridge:status
+# Verify
+bun run bridge:status
 ```
 
 ---
 
 ## Deploy to Mainnet
 
-### Step 1: Pre-flight
-
 ```bash
-solana-keygen pubkey ~/.config/solana/mirage-bridge-authority.json
-solana balance ~/.config/solana/mirage-bridge-authority.json --url mainnet-beta
-# Need ~3 SOL
-```
+# Start container
+./docker.sh start mainnet
 
-### Step 2: Build & Deploy
+# Inside container:
 
-```bash
-solana config set --url mainnet-beta
+# Check authority balance (need ~3 SOL)
+solana balance
+
+# Build & deploy
 ./build.sh
-anchor deploy --provider.cluster mainnet-beta
+anchor deploy
+
+# Initialize
+bun run bridge:init
+
+# Register production validators
+VALIDATORS_FILE=production-validators.json bun run bridge:validators
+
+# Verify
+bun run bridge:status
 ```
 
-### Step 3: Initialize & Register Validators
-
-```bash
-NETWORK=mainnet bun run bridge:init
-NETWORK=mainnet VALIDATORS_FILE=production-validators.json bun run bridge:validators
-```
-
-### Step 4: Update Mirage Node Config
-
-In `deploy/templates/env/orchestrator.env`:
+Then update `deploy/templates/env/orchestrator.env` in mirage-node:
 
 ```bash
 ORCHESTRATOR_SOLANA_PROGRAM_ID=<mainnet-program-id>
@@ -251,10 +202,11 @@ ORCHESTRATOR_SOLANA_WS=wss://api.mainnet-beta.solana.com
 ## Upgrade Existing Deployment
 
 ```bash
+./docker.sh start devnet   # or mainnet
+
+# Inside container:
 ./build.sh
-anchor upgrade target/deploy/mirage_bridge.so \
-  --program-id <program-id> \
-  --provider.cluster devnet
+anchor upgrade target/deploy/mirage_bridge.so --program-id <program-id>
 ```
 
 State is preserved. Only program code changes.
@@ -263,19 +215,27 @@ State is preserved. Only program code changes.
 
 ## Testing
 
+All tests run inside Docker.
+
 ### Unit Tests
 
 ```bash
+./docker.sh start devnet
+
+# Inside container:
 bun test
 ```
 
 ### E2E Test (Localnet)
 
 ```bash
-# Terminal 1
+./docker.sh start devnet
+
+# Inside container:
+# Terminal 1 - start local validator
 solforge
 
-# Terminal 2
+# Terminal 2 (docker exec into same container)
 bun run bridge:setup
 bun run bridge:e2e
 ```
@@ -283,8 +243,11 @@ bun run bridge:e2e
 ### E2E Test (Devnet)
 
 ```bash
-NETWORK=devnet bun run bridge:setup
-NETWORK=devnet bun run bridge:e2e
+./docker.sh start devnet
+
+# Inside container:
+bun run bridge:setup
+bun run bridge:e2e
 ```
 
 ---
@@ -364,13 +327,16 @@ solana-keygen pubkey ~/.mirage/orchestrator/solana-keypair.json
 
 ## Troubleshooting
 
+All commands run inside Docker (`./docker.sh start devnet`).
+
 | Error | Solution |
 |-------|----------|
-| Account not found | Run `bun run bridge:init` |
-| Not registered orchestrator | Run `bun run bridge:validators` |
-| Insufficient funds | Fund authority with SOL |
-| Bridge is paused | Run `bun run bridge:unpause` |
+| Account not found | `bun run bridge:init` |
+| Not registered orchestrator | `bun run bridge:validators` |
+| Insufficient funds | `solana airdrop 5` (devnet) or transfer SOL (mainnet) |
+| Bridge is paused | `bun run bridge:unpause` |
 | Program keypair not found | `solana-keygen new -o ~/.config/solana/mirage-bridge-program.json` |
+| Docker permission denied | `sudo usermod -aG docker $USER` then re-login |
 
 ---
 

@@ -13,3 +13,4 @@ test-ledger
 reference
 .solforge
 .env
+scripts/validators/

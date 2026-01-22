@@ -45,6 +45,7 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         &params.mirage_sender,
         params.amount,
         &ctx.accounts.recipient.key(),
+        "solana", // destination chain bound to prevent cross-chain replay
     );
 
     verify_ed25519_signature(

@@ -22,12 +22,16 @@ function buildAttestationPayload(
   burnTxHash: Buffer,
   mirageSender: string,
   amount: BN,
-  recipient: PublicKey
+  recipient: PublicKey,
+  destinationChain: string = "solana"
 ): Buffer {
   const senderLen = Buffer.alloc(4);
   senderLen.writeUInt32LE(mirageSender.length, 0);
   
   const amountBuf = amount.toArrayLike(Buffer, "le", 8);
+
+  const chainLen = Buffer.alloc(4);
+  chainLen.writeUInt32LE(destinationChain.length, 0);
   
   return Buffer.concat([
     burnTxHash,
@@ -35,6 +39,8 @@ function buildAttestationPayload(
     Buffer.from(mirageSender),
     amountBuf,
     recipient.toBuffer(),
+    chainLen,
+    Buffer.from(destinationChain),
   ]);
 }
 

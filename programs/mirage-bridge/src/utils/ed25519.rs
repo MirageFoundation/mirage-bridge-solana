@@ -14,6 +14,7 @@ pub fn build_attestation_payload(
     mirage_sender: &str,
     amount: u64,
     recipient: &Pubkey,
+    destination_chain: &str,
 ) -> Vec<u8> {
     let mut payload = Vec::new();
     payload.extend_from_slice(burn_tx_hash);
@@ -21,6 +22,9 @@ pub fn build_attestation_payload(
     payload.extend_from_slice(mirage_sender.as_bytes());
     payload.extend_from_slice(&amount.to_le_bytes());
     payload.extend_from_slice(&recipient.to_bytes());
+    // Bind destination chain to prevent cross-chain replay attacks
+    payload.extend_from_slice(&(destination_chain.len() as u32).to_le_bytes());
+    payload.extend_from_slice(destination_chain.as_bytes());
     payload
 }
 

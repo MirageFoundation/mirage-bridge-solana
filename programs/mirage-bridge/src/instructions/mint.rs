@@ -3,7 +3,7 @@ use anchor_lang::solana_program::sysvar::instructions as ix_sysvar;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, MintTo, Token, TokenAccount};
 
-use crate::constants::{BASIS_POINTS_DENOMINATOR, MAX_ATTESTORS};
+use crate::constants::{BASIS_POINTS_DENOMINATOR, MAX_VALIDATORS};
 use crate::errors::BridgeError;
 use crate::events::{MintAttested, MintCompleted};
 use crate::state::{BridgeConfig, BridgeState, MintRecord, ValidatorRegistry};
@@ -84,7 +84,7 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
     }
 
     require!(
-        mint_record.attestations.len() < MAX_ATTESTORS,
+        mint_record.attestations.len() < MAX_VALIDATORS,
         BridgeError::TooManyAttestors
     );
 

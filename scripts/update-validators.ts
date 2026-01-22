@@ -43,13 +43,10 @@ async function main() {
 
   let validatorInputs: ValidatorInput[];
   
-  const validatorsFile = process.env.VALIDATORS_FILE;
-  if (validatorsFile) {
-    console.log(`Loading validators from file: ${validatorsFile}`);
-    validatorInputs = parseValidatorsFromFile(validatorsFile);
-  } else {
-    validatorInputs = parseValidatorsFromEnv();
-  }
+  // Default to scripts/wallets/validators.json if no env var specified
+  const validatorsFile = process.env.VALIDATORS_FILE || "scripts/wallets/validators.json";
+  console.log(`Loading validators from file: ${validatorsFile}`);
+  validatorInputs = parseValidatorsFromFile(validatorsFile);
 
   const validators = validatorInputs.map((v) => ({
     orchestratorPubkey: new PublicKey(v.orchestratorPubkey),

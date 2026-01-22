@@ -9,7 +9,7 @@ import { confirmTx, shortPubkey } from "./common/utils";
 interface ValidatorConfig {
   orchestratorPubkey: string;
   mirageValidator: string;
-  stake: number;
+  stake: string | number;
 }
 
 /**
@@ -71,16 +71,18 @@ async function main() {
   const validators = validatorConfigs.map((v) => ({
     orchestratorPubkey: new PublicKey(v.orchestratorPubkey),
     mirageValidator: v.mirageValidator,
-    stake: new BN(Math.floor(v.stake)), // truncate decimals for on-chain
+    stake: new BN(String(v.stake).split('.')[0]), // handle large numbers, truncate decimals
   }));
 
   console.log(`\nUpdating validator set (${validators.length} validators):`);
-  let totalStake = 0;
-  for (const v of validatorConfigs) {
-    console.log(`  ${v.orchestratorPubkey.slice(0, 8)}... | ${v.mirageValidator} | stake: ${v.stake}`);
-    totalStake += v.stake;
+  let totalStake = new BN(0);
+  for (let i = 0; i < validatorConfigs.length; i++) {
+    const v = validatorConfigs[i];
+    const stake = validators[i].stake;
+    console.log(`  ${v.orchestratorPubkey.slice(0, 8)}... | ${v.mirageValidator} | stake: ${stake.toString()}`);
+    totalStake = totalStake.add(stake);
   }
-  console.log(`  Total stake: ${totalStake}`);
+  console.log(`  Total stake: ${totalStake.toString()}`);
   console.log("");
 
   const tx = await program.methods

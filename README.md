@@ -95,11 +95,18 @@ curl -fsSL https://bun.sh/install | bash
 
 ### 1. Generate Keypairs
 
+Two keypairs are needed:
+
+| Keypair | Purpose | When Needed |
+|---------|---------|-------------|
+| **Authority** | Pays for deployment, upgrade authority, bridge admin | Always (for upgrades and admin ops) |
+| **Program** | Determines program address (public key = program ID) | Only during **initial** deployment |
+
 ```bash
-# Authority keypair - pays for deployment, owns upgrade authority, bridge admin
+# Authority keypair - KEEP THIS, needed for upgrades and admin
 solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
 
-# Program keypair - determines the program address (KEEP THIS FOREVER)
+# Program keypair - only needed for initial deploy
 solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
 
 # View addresses
@@ -107,7 +114,13 @@ solana-keygen pubkey ~/.config/solana/mirage-bridge-authority.json
 solana-keygen pubkey ~/.config/solana/mirage-bridge-program.json
 ```
 
-**IMPORTANT:** Back up both keypairs securely. The program keypair determines your program ID forever.
+**About the program keypair:**
+- The **public key** becomes your permanent program ID
+- The **private key** is only used once during `anchor deploy` to prove ownership of that address
+- After initial deployment, upgrades use the **authority keypair**, not the program keypair
+- If you lose the program keypair after deploying, you can still upgrade (authority controls that)
+- **Devnet:** Feel free to generate a new one anytime - you'll just get a new program address
+- **Mainnet:** Back it up in case you ever need to prove original deployment, but it's not strictly required after deploy
 
 ### 2. Fund Authority Wallet
 

@@ -214,14 +214,23 @@ The Solana bridge needs to know which Solana pubkeys are authorized to submit mi
 # In mirage-node repo directory
 python3 deploy/setup_orchestrator.py
 
-# Get the Solana pubkey to share
-solana-keygen pubkey ~/.mirage/orchestrator/solana-keypair.json
-# Example output: 7xKp2abcdefghijklmnopqrstuvwxyz123456789
-
-# Fund with SOL for tx fees (~0.1 SOL)
-# Devnet: solana airdrop 0.1 <pubkey> --url devnet
-# Mainnet: Transfer SOL to this address
+# Output:
+# ==================================================
+# SOLANA WALLET READY
+# ==================================================
+#
+#   Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789   <-- THIS IS THE PUBKEY
+#   Keypair: /home/user/.mirage/orchestrator/solana-keypair.json
+#
+# ==================================================
 ```
+
+The script:
+1. Generates (or imports) a 12-word mnemonic
+2. Derives a Solana keypair using BIP44 (Phantom-compatible)
+3. Saves to `~/.mirage/orchestrator/solana-keypair.json`
+4. **Outputs the pubkey** - share this with the bridge deployer
+5. Waits for funding (~0.1 SOL minimum for tx fees)
 
 **Then create validators.json:**
 
@@ -328,9 +337,7 @@ Before deploying, each validator must generate their orchestrator Solana keypair
 ```bash
 # On each validator node (in mirage-node repo):
 python3 deploy/setup_orchestrator.py
-
-# Get the pubkey to share:
-solana-keygen pubkey ~/.mirage/orchestrator/solana-keypair.json
+# The script outputs the pubkey - share it with the bridge deployer
 ```
 
 Create `scripts/wallets/mainnet-validators.json` with collected pubkeys:
@@ -457,16 +464,15 @@ ORCHESTRATOR_SOLANA_CONFIRMATIONS=32
 ```bash
 python3 deploy/setup_orchestrator.py
 # Generates ~/.mirage/orchestrator/solana-keypair.json
+# Outputs the Solana pubkey to share
+# Waits for funding (~0.1 SOL minimum)
 ```
 
 **Fund each orchestrator wallet with ~0.1 SOL** for transaction fees (~0.000005 SOL per mint attestation).
 
 ### Register on Solana
 
-```bash
-solana-keygen pubkey ~/.mirage/orchestrator/solana-keypair.json
-# Add to validators.json and run update-validators
-```
+Share the pubkey (shown by setup script) with the bridge deployer. They'll add it to `validators.json` and run `bun run bridge:validators`.
 
 ---
 

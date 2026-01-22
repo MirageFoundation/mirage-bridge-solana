@@ -66,9 +66,6 @@ Both directions require **2/3 validator stake** to confirm a transfer.
      │                     6. MIRAGE arrives in Solana wallet  │
 ```
 
-**Program ID (Devnet):** `9rMS8JEHCM5UTGjwKoXV7V32tzkgM9b16LZcbVdPAMdp`  
-**Token Mint (Devnet):** `BH8J5cEBvvzHJLehBa2EkN2XHteE7v6rWtEF585JGai2`
-
 ---
 
 ## Prerequisites
@@ -158,12 +155,11 @@ The Solana bridge needs to know which Solana pubkeys are authorized to submit mi
 │  Mirage Validator Node                    Solana Bridge Program          │
 │  ─────────────────────                    ─────────────────────          │
 │                                                                          │
-│  1. Run setup_orchestrator.py             2. Create config file in       │
-│     → Creates Solana keypair                 scripts/validators/         │
-│     → Outputs pubkey                         with pubkey + stake         │
-│     → Waits for funding                                                  │
-│                                           3. Run bridge:validators       │
-│                                              → Reads all *.json files    │
+│  1. Run setup_orchestrator.py             2. Copy config files to        │
+│     → Detects validator address              scripts/validators/         │
+│     → Queries stake from chain                                           │
+│     → Creates Solana keypair              3. Run bridge:validators       │
+│     → Saves config to ~/.orchestrator/       → Reads all *.json files    │
 │                                              → Registers on-chain        │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -173,67 +169,69 @@ The Solana bridge needs to know which Solana pubkeys are authorized to submit mi
 
 Put your validator config files here. The script reads **all .json files** in this directory.
 
-```
-scripts/validators/
-├── node1.json      # Any filename works
-├── node2.json
-├── alice.json
-└── bob.json
-```
-
 **Format:** Each file is a JSON object:
 
 ```json
 {
-  "orchestratorPubkey": "7xKp2abc...",
-  "mirageValidator": "miragevaloper1xyz...",
-  "stake": 1000000
+  "orchestratorPubkey": "5cDWcHN47rbfeBiMwb7imF2BvJPT2pGvThNqPi6aBsj2",
+  "mirageValidator": "miragevaloper1xv63rjc9dymz8pemecupute90469x9aax8gynw",
+  "stake": 19995002499187000
 }
 ```
 
 **Fields:**
-- `orchestratorPubkey`: Solana pubkey (base58) from the validator's orchestrator keypair
-- `mirageValidator`: The validator's Mirage operator address
-- `stake`: The validator's stake amount (absolute number, not percentage)
+- `orchestratorPubkey`: Solana pubkey (base58) - the orchestrator's signing key
+- `mirageValidator`: The validator's Mirage operator address (miragevaloper1...)
+- `stake`: The validator's staked tokens in umirage (integer, no decimals)
 
-**Threshold:** 2/3 of total stake required for mints. Total stake = sum of all validator stakes.
+**Threshold:** 2/3 of total stake required for mints.
 
 ### Setting Up Validators
 
-**Step 1: On each Mirage validator node, generate orchestrator keypair:**
+**Step 1: On each Mirage validator node, run the setup script:**
 
 ```bash
 python3 deploy/setup_orchestrator.py
-
-# Output:
-# ==================================================
-# SOLANA WALLET READY
-# ==================================================
-#
-#   Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789   ← Note this pubkey
-#   Keypair: /home/user/.mirage/orchestrator/solana-keypair.json
-#
-# ==================================================
 ```
 
-**Step 2: Create config files in `scripts/validators/`:**
+The script automatically:
+1. Detects your validator address from the local keyring
+2. Queries your validator's stake from the chain
+3. Generates (or imports) a Solana keypair
+4. Saves the config to `~/.orchestrator/<valoper>.json`
 
-For each validator, create a JSON file (any filename):
+**Output:**
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ SETUP COMPLETE                                                   │
+└──────────────────────────────────────────────────────────────────┘
+
+  Config saved: /home/user/.orchestrator/miragevaloper1xyz....json
+
+  This wallet is EXCLUSIVE to this orchestrator node.
+  Maintain at least 0.1 SOL for transaction fees.
+
+{
+  "orchestratorPubkey": "5cDWcHN47rbfeBiMwb7imF2BvJPT2pGvThNqPi6aBsj2",
+  "mirageValidator": "miragevaloper1xv63rjc9dymz8pemecupute90469x9aax8gynw",
+  "stake": 19995002499187000
+}
+```
+
+**Step 2: Collect configs and copy to bridge repo:**
 
 ```bash
-# scripts/validators/node1.json
-{
-  "orchestratorPubkey": "7xKp2abcdefghijklmnopqrstuvwxyz123456789",
-  "mirageValidator": "miragevaloper1abc...",
-  "stake": 1000000
-}
+# From each validator, copy the generated config
+scp validator1:~/.orchestrator/*.json scripts/validators/
+scp validator2:~/.orchestrator/*.json scripts/validators/
+# etc.
 ```
 
 **Step 3: Register on Solana:**
 
 ```bash
 bun run bridge:validators
-# Reads scripts/validators/*.json, registers all validators
 ```
 
 ---
@@ -243,8 +241,8 @@ bun run bridge:validators
 ### Prerequisites
 
 Before deploying, **set up your validators** (see [Validator Registry](#validator-registry) section):
-1. Run `setup_orchestrator.py` on each validator node to get their pubkeys
-2. Create config files in `scripts/validators/` with pubkey, mirageValidator, stake
+1. Run `setup_orchestrator.py` on each validator node (generates config automatically)
+2. Copy the generated configs from `~/.orchestrator/*.json` to `scripts/validators/`
 
 ### Deploy Steps
 
@@ -285,8 +283,8 @@ When you run `anchor deploy`, two things are created:
 2. **IDL account** - Stores the program's interface definition (instructions, accounts, types)
 
 ```
-Program Id: 9rMS8JEHCM5UTGjwKoXV7V32tzkgM9b16LZcbVdPAMdp    ← Your program
-Idl account: EcUihngJEvngH1Ruh2o1rvrnGZZks7NCycw7ZrmCFw28   ← Metadata for clients
+Program Id: <your-program-id>
+Idl account: <derived-from-program-id>
 ```
 
 The **IDL (Interface Definition Language)** is like an ABI in Ethereum - it describes how to interact with the program. Anchor stores it on-chain so clients can discover the program's interface without needing the IDL file locally. The IDL account is a PDA derived from your program ID.
@@ -297,24 +295,19 @@ The **IDL (Interface Definition Language)** is like an ABI in Ethereum - it desc
 
 **Requires ~3 SOL** in authority wallet before starting.
 
-### Step 1: Create Validator Configs
+### Step 1: Collect Validator Configs
 
-On each validator node, get the orchestrator pubkey:
+On each validator node, run:
 
 ```bash
 python3 deploy/setup_orchestrator.py
-# Outputs: Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789
 ```
 
-Create config files in `scripts/validators/`:
+This generates `~/.orchestrator/<valoper>.json`. Copy all configs to the bridge repo:
 
-```json
-// scripts/validators/node1.json
-{
-  "orchestratorPubkey": "7xKp2abc...",
-  "mirageValidator": "miragevaloper1...",
-  "stake": 1000000
-}
+```bash
+scp validator1:~/.orchestrator/*.json scripts/validators/
+scp validator2:~/.orchestrator/*.json scripts/validators/
 ```
 
 ### Step 2: Deploy
@@ -391,8 +384,8 @@ In `~/.mirage/env/orchestrator.env`:
 
 ```bash
 ORCHESTRATOR_ENABLED=true
-ORCHESTRATOR_SOLANA_PROGRAM_ID=9rMS8JEHCM5UTGjwKoXV7V32tzkgM9b16LZcbVdPAMdp
-ORCHESTRATOR_SOLANA_TOKEN_ADDRESS=BH8J5cEBvvzHJLehBa2EkN2XHteE7v6rWtEF585JGai2
+ORCHESTRATOR_SOLANA_PROGRAM_ID=<program-id>
+ORCHESTRATOR_SOLANA_TOKEN_ADDRESS=<token-mint-pda>
 ORCHESTRATOR_SOLANA_RPC=https://api.devnet.solana.com
 ORCHESTRATOR_SOLANA_WS=wss://api.devnet.solana.com
 ORCHESTRATOR_SOLANA_KEYPAIR=${HOME}/.mirage/orchestrator/solana-keypair.json
@@ -403,16 +396,17 @@ ORCHESTRATOR_SOLANA_CONFIRMATIONS=32
 
 ```bash
 python3 deploy/setup_orchestrator.py
-# Generates ~/.mirage/orchestrator/solana-keypair.json
-# Outputs the Solana pubkey to share
-# Waits for funding (~0.1 SOL minimum)
 ```
 
-**Fund each orchestrator wallet with ~0.1 SOL** for transaction fees (~0.000005 SOL per mint attestation).
+This script:
+- Detects your validator address and stake from the chain
+- Generates a Solana keypair at `~/.mirage/orchestrator/solana-keypair.json`
+- Saves the config to `~/.orchestrator/<valoper>.json`
+- Waits for funding (~0.1 SOL minimum)
 
 ### Register on Solana
 
-Create a config file in `scripts/validators/` with the pubkey, mirageValidator address, and stake. Then run `bun run bridge:validators`.
+Copy the generated config to the bridge repo's `scripts/validators/` and run `bun run bridge:validators`.
 
 ---
 

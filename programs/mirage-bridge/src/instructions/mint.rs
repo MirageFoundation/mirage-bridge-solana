@@ -96,12 +96,12 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         .checked_add(stake)
         .ok_or(BridgeError::PowerOverflow)?;
 
-    let required_stake = validator_registry
-        .total_stake
-        .checked_mul(bridge_config.attestation_threshold)
+    // Use u128 to avoid overflow with large stake values
+    let required_stake = ((validator_registry.total_stake as u128)
+        .checked_mul(bridge_config.attestation_threshold as u128)
         .ok_or(BridgeError::PowerOverflow)?
-        .checked_div(BASIS_POINTS_DENOMINATOR)
-        .ok_or(BridgeError::PowerOverflow)?;
+        .checked_div(BASIS_POINTS_DENOMINATOR as u128)
+        .ok_or(BridgeError::PowerOverflow)?) as u64;
 
     emit!(MintAttested {
         burn_tx_hash: params.burn_tx_hash,

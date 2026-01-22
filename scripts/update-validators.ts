@@ -9,12 +9,13 @@ import { confirmTx, shortPubkey } from "./common/utils";
 interface ValidatorConfig {
   orchestratorPubkey: string;
   mirageValidator: string;
-  stake: string | number;
+  stake: string; // umirage (smallest unit, no decimals)
 }
 
 /**
  * Load validator configs from scripts/validators/*.json
  * Each file should contain: { orchestratorPubkey, mirageValidator, stake }
+ * Stake must be an integer (umirage - smallest unit, no decimals)
  */
 function loadValidators(validatorsDir: string): ValidatorConfig[] {
   const files = readdirSync(validatorsDir)
@@ -35,10 +36,16 @@ function loadValidators(validatorsDir: string): ValidatorConfig[] {
       throw new Error(`Invalid validator config in ${file}. Required: orchestratorPubkey, mirageValidator, stake`);
     }
 
+    // Stake must be integer (umirage - smallest unit)
+    const stakeStr = String(data.stake);
+    if (stakeStr.includes('.')) {
+      throw new Error(`Invalid stake in ${file}: "${data.stake}" - must be integer (umirage, no decimals)`);
+    }
+
     validators.push({
       orchestratorPubkey: data.orchestratorPubkey,
       mirageValidator: data.mirageValidator,
-      stake: data.stake,
+      stake: stakeStr,
     });
   }
 
@@ -71,7 +78,7 @@ async function main() {
   const validators = validatorConfigs.map((v) => ({
     orchestratorPubkey: new PublicKey(v.orchestratorPubkey),
     mirageValidator: v.mirageValidator,
-    stake: new BN(String(v.stake).split('.')[0]), // handle large numbers, truncate decimals
+    stake: new BN(v.stake),
   }));
 
   console.log(`\nUpdating validator set (${validators.length} validators):`);

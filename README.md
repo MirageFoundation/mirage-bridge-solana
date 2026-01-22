@@ -83,7 +83,7 @@ docker --version   # Docker required
 
 All commands run inside Docker. Keypairs persist on host at `~/.config/solana/`.
 
-**Before starting:** Put validator keypairs in `scripts/validators/` (see [Validator Registry](#validator-registry)).
+**Before starting:** Create validator config files in `scripts/validators/` (see [Validator Registry](#validator-registry)).
 
 ```bash
 # 1. Start Docker container
@@ -105,7 +105,7 @@ anchor deploy
 # 5. Initialize bridge (~0.05 SOL for account creation)
 bun run bridge:init
 
-# 6. Register validators (~0.01 SOL) - reads scripts/wallets/validator*.json
+# 6. Register validators (~0.01 SOL) - reads scripts/validators/*.json
 bun run bridge:validators
 
 # 7. Verify
@@ -158,14 +158,13 @@ The Solana bridge needs to know which Solana pubkeys are authorized to submit mi
 │  Mirage Validator Node                    Solana Bridge Program          │
 │  ─────────────────────                    ─────────────────────          │
 │                                                                          │
-│  1. Run setup_orchestrator.py             2. Copy keypair to             │
+│  1. Run setup_orchestrator.py             2. Create config file in       │
 │     → Creates Solana keypair                 scripts/validators/         │
-│     → Outputs pubkey                         (any filename.json)         │
+│     → Outputs pubkey                         with pubkey + stake         │
 │     → Waits for funding                                                  │
 │                                           3. Run bridge:validators       │
 │                                              → Reads all *.json files    │
-│                                              → Derives pubkeys           │
-│                                              → Splits stake equally      │
+│                                              → Registers on-chain        │
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -201,10 +200,9 @@ scripts/validators/
 
 ### Setting Up Validators
 
-**On each Mirage validator node:**
+**Step 1: On each Mirage validator node, generate orchestrator keypair:**
 
 ```bash
-# In mirage-node repo
 python3 deploy/setup_orchestrator.py
 
 # Output:
@@ -212,29 +210,30 @@ python3 deploy/setup_orchestrator.py
 # SOLANA WALLET READY
 # ==================================================
 #
-#   Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789
+#   Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789   ← Note this pubkey
 #   Keypair: /home/user/.mirage/orchestrator/solana-keypair.json
 #
 # ==================================================
 ```
 
-**Collect keypairs:**
+**Step 2: Create config files in `scripts/validators/`:**
 
-Copy each validator's keypair to the bridge repo:
+For each validator, create a JSON file (any filename):
 
 ```bash
-# From each validator node, copy the keypair file
-scp validator1:~/.mirage/orchestrator/solana-keypair.json scripts/validators/node1.json
-scp validator2:~/.mirage/orchestrator/solana-keypair.json scripts/validators/node2.json
-scp validator3:~/.mirage/orchestrator/solana-keypair.json scripts/validators/node3.json
-# etc. (any filename works)
+# scripts/validators/node1.json
+{
+  "orchestratorPubkey": "7xKp2abcdefghijklmnopqrstuvwxyz123456789",
+  "mirageValidator": "miragevaloper1abc...",
+  "stake": 1000000
+}
 ```
 
-**Register on Solana:**
+**Step 3: Register on Solana:**
 
 ```bash
 bun run bridge:validators
-# Reads scripts/validators/*.json, derives pubkeys, registers all
+# Reads scripts/validators/*.json, registers all validators
 ```
 
 ---
@@ -244,8 +243,8 @@ bun run bridge:validators
 ### Prerequisites
 
 Before deploying, **set up your validators** (see [Validator Registry](#validator-registry) section):
-1. Run `setup_orchestrator.py` on each validator node
-2. Copy keypairs to `scripts/validators/` (any .json filename)
+1. Run `setup_orchestrator.py` on each validator node to get their pubkeys
+2. Create config files in `scripts/validators/` with pubkey, mirageValidator, stake
 
 ### Deploy Steps
 
@@ -298,21 +297,24 @@ The **IDL (Interface Definition Language)** is like an ABI in Ethereum - it desc
 
 **Requires ~3 SOL** in authority wallet before starting.
 
-### Step 1: Collect Validator Keypairs
+### Step 1: Create Validator Configs
 
-On each validator node:
+On each validator node, get the orchestrator pubkey:
 
 ```bash
 python3 deploy/setup_orchestrator.py
-# Creates ~/.mirage/orchestrator/solana-keypair.json
+# Outputs: Address: 7xKp2abcdefghijklmnopqrstuvwxyz123456789
 ```
 
-Copy each keypair to `scripts/validators/`:
+Create config files in `scripts/validators/`:
 
-```bash
-scp validator1:~/.mirage/orchestrator/solana-keypair.json scripts/validators/node1.json
-scp validator2:~/.mirage/orchestrator/solana-keypair.json scripts/validators/node2.json
-# etc. (any filename works)
+```json
+// scripts/validators/node1.json
+{
+  "orchestratorPubkey": "7xKp2abc...",
+  "mirageValidator": "miragevaloper1...",
+  "stake": 1000000
+}
 ```
 
 ### Step 2: Deploy
@@ -410,7 +412,7 @@ python3 deploy/setup_orchestrator.py
 
 ### Register on Solana
 
-Copy the keypair file to `scripts/validators/` in the bridge repo (any .json filename). Then run `bun run bridge:validators`.
+Create a config file in `scripts/validators/` with the pubkey, mirageValidator address, and stake. Then run `bun run bridge:validators`.
 
 ---
 
@@ -422,7 +424,7 @@ Copy the keypair file to `scripts/validators/` in the bridge repo (any .json fil
 |-----|-------|-------------|
 | Bridge Config | `["bridge_config"]` | Global settings |
 | Bridge State | `["bridge_state"]` | Replay protection |
-| Validator Registry | `["validator_registry"]` | Validators + power |
+| Validator Registry | `["validator_registry"]` | Validators + stake |
 | Token Mint | `["mint"]` | MIRAGE SPL token |
 | Mint Record | `["mint_record", burn_tx_hash]` | Attestation tracking |
 | Burn Record | `["burn_record", nonce_le_bytes]` | Burn records |

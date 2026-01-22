@@ -11,16 +11,16 @@ pub fn update_validators(ctx: Context<UpdateValidators>, params: UpdateValidator
         BridgeError::TooManyValidators
     );
 
-    let total_voting_power: u64 = params
+    let total_stake: u64 = params
         .validators
         .iter()
-        .map(|v| v.voting_power)
-        .try_fold(0u64, |acc, power| acc.checked_add(power))
+        .map(|v| v.stake)
+        .try_fold(0u64, |acc, stake| acc.checked_add(stake))
         .ok_or(BridgeError::PowerOverflow)?;
 
     let validator_registry = &mut ctx.accounts.validator_registry;
     validator_registry.validators = params.validators;
-    validator_registry.total_voting_power = total_voting_power;
+    validator_registry.total_stake = total_stake;
 
     Ok(())
 }

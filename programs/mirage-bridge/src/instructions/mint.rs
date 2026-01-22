@@ -32,12 +32,12 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
 
     let validator_registry = &ctx.accounts.validator_registry;
     require!(
-        validator_registry.total_voting_power > 0,
+        validator_registry.total_stake > 0,
         BridgeError::InvalidValidatorSet
     );
 
-    let voting_power = validator_registry
-        .get_validator_power(&ctx.accounts.orchestrator.key())
+    let stake = validator_registry
+        .get_validator_stake(&ctx.accounts.orchestrator.key())
         .ok_or(BridgeError::UnauthorizedOrchestrator)?;
 
     let expected_message = build_attestation_payload(
@@ -93,11 +93,11 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         .push(ctx.accounts.orchestrator.key());
     mint_record.attested_power = mint_record
         .attested_power
-        .checked_add(voting_power)
+        .checked_add(stake)
         .ok_or(BridgeError::PowerOverflow)?;
 
-    let required_power = validator_registry
-        .total_voting_power
+    let required_stake = validator_registry
+        .total_stake
         .checked_mul(bridge_config.attestation_threshold)
         .ok_or(BridgeError::PowerOverflow)?
         .checked_div(BASIS_POINTS_DENOMINATOR)
@@ -107,10 +107,10 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         burn_tx_hash: params.burn_tx_hash,
         orchestrator: ctx.accounts.orchestrator.key(),
         current_power: mint_record.attested_power,
-        threshold: required_power,
+        threshold: required_stake,
     });
 
-    if mint_record.attested_power >= required_power {
+    if mint_record.attested_power >= required_stake {
         let signer_seeds: &[&[&[u8]]] = &[&[b"bridge_config", &[bridge_config.bump]]];
 
         token::mint_to(

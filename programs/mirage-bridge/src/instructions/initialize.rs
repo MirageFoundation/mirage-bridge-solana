@@ -28,7 +28,7 @@ pub fn initialize(ctx: Context<Initialize>, params: InitializeParams) -> Result<
 
     let validator_registry = &mut ctx.accounts.validator_registry;
     validator_registry.validators = Vec::new();
-    validator_registry.total_voting_power = 0;
+    validator_registry.total_stake = 0;
     validator_registry.bump = ctx.bumps.validator_registry;
 
     let bridge_state = &mut ctx.accounts.bridge_state;

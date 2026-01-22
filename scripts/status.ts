@@ -41,13 +41,13 @@ async function main() {
 
   console.log(`\nValidator Registry:`);
   console.log(`  Total Validators: ${registry.validators.length}`);
-  console.log(`  Total Voting Power: ${registry.totalVotingPower.toNumber()}`);
+  console.log(`  Total Stake: ${registry.totalStake.toNumber()}`);
   
   if (registry.validators.length > 0) {
     console.log(`\n  Validators:`);
     for (const v of registry.validators) {
-      const powerPercent = ((v.votingPower.toNumber() / registry.totalVotingPower.toNumber()) * 100).toFixed(2);
-      console.log(`    - ${shortPubkey(v.orchestratorPubkey)} | ${v.mirageValidator} | ${v.votingPower.toNumber()} (${powerPercent}%)`);
+      const stakePercent = ((v.stake.toNumber() / registry.totalStake.toNumber()) * 100).toFixed(2);
+      console.log(`    - ${shortPubkey(v.orchestratorPubkey)} | ${v.mirageValidator} | ${v.stake.toNumber()} (${stakePercent}%)`);
     }
   }
 

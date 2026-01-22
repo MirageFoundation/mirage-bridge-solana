@@ -10,6 +10,6 @@ pub const BASIS_POINTS_DENOMINATOR: u64 = 10000;
 // - validators vec length: 4 bytes
 // - validators: MAX_VALIDATORS * (32 pubkey + 4 string_len + MAX_VALIDATOR_ADDR_LEN + 8 u64)
 //             = 100 * (32 + 4 + 52 + 8) = 100 * 96 = 9,600 bytes
-// - total_voting_power: 8 bytes
+// - total_stake: 8 bytes
 // - bump: 1 byte
 // Total: 8 + 4 + 9,600 + 8 + 1 = 9,621 bytes (under 10,240 limit)

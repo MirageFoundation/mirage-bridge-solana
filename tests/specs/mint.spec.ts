@@ -144,7 +144,7 @@ describe("6. Mint", () => {
 
     // From update_validators.spec.ts, we have 3 validators with total 6000 power
     expect(registry.validators.length).toBe(3);
-    expect(registry.totalVotingPower.toNumber()).toBe(6000);
+    expect(registry.totalStake.toNumber()).toBe(6000);
   });
 
   it("should complete mint with valid Ed25519 attestation when threshold reached", async () => {
@@ -163,7 +163,7 @@ describe("6. Mint", () => {
       {
         orchestratorPubkey: orchestratorKeypair.publicKey,
         mirageValidator: "miragevaloper1testmint",
-        votingPower: new BN(10000), // 100% of power - will meet any threshold
+        stake: new BN(10000), // 100% of power - will meet any threshold
       },
     ];
 
@@ -189,7 +189,7 @@ describe("6. Mint", () => {
     // Verify validator was added
     const registryAfter = await program.account.validatorRegistry.fetch(validatorRegistry);
     expect(registryAfter.validators.length).toBe(1);
-    expect(registryAfter.totalVotingPower.toNumber()).toBe(10000);
+    expect(registryAfter.totalStake.toNumber()).toBe(10000);
 
     // Now create the mint attestation
     const burnTxHash = generateBurnTxHash();
@@ -285,17 +285,17 @@ describe("6. Mint", () => {
       {
         orchestratorPubkey: orchestrator1.publicKey,
         mirageValidator: "miragevaloper1val1",
-        votingPower: new BN(2000), // 33.3%
+        stake: new BN(2000), // 33.3%
       },
       {
         orchestratorPubkey: orchestrator2.publicKey,
         mirageValidator: "miragevaloper1val2",
-        votingPower: new BN(2000), // 33.3%
+        stake: new BN(2000), // 33.3%
       },
       {
         orchestratorPubkey: orchestrator3.publicKey,
         mirageValidator: "miragevaloper1val3",
-        votingPower: new BN(2000), // 33.3%
+        stake: new BN(2000), // 33.3%
       },
     ];
 
@@ -432,7 +432,7 @@ describe("6. Mint", () => {
       {
         orchestratorPubkey: orchestrator.publicKey,
         mirageValidator: "miragevaloper1double",
-        votingPower: new BN(5000), // 50% - below threshold
+        stake: new BN(5000), // 50% - below threshold
       },
     ];
 
@@ -538,7 +538,7 @@ describe("6. Mint", () => {
       {
         orchestratorPubkey: orchestrator.publicKey,
         mirageValidator: "miragevaloper1pausetest",
-        votingPower: new BN(10000),
+        stake: new BN(10000),
       },
     ];
 

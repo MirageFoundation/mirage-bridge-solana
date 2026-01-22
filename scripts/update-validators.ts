@@ -1,26 +1,48 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { setupFromEnv, loadKeypair } from "./common/config";
+import { readdirSync, readFileSync } from "fs";
+import { join } from "path";
+import { setupFromEnv } from "./common/config";
 import { getBridgeConfigPDA, getValidatorRegistryPDA, logPDAs } from "./common/pda";
 import { confirmTx, shortPubkey } from "./common/utils";
 
-interface ValidatorInput {
+interface ValidatorConfig {
   orchestratorPubkey: string;
   mirageValidator: string;
-  votingPower: number;
+  stake: number;
 }
 
-function parseValidatorsFromEnv(): ValidatorInput[] {
-  const validatorsJson = process.env.VALIDATORS;
-  if (!validatorsJson) {
-    throw new Error("VALIDATORS env var required. Format: JSON array of {orchestratorPubkey, mirageValidator, votingPower}");
+/**
+ * Load validator configs from scripts/validators/*.json
+ * Each file should contain: { orchestratorPubkey, mirageValidator, stake }
+ */
+function loadValidators(validatorsDir: string): ValidatorConfig[] {
+  const files = readdirSync(validatorsDir)
+    .filter(f => f.endsWith(".json"))
+    .sort();
+  
+  if (files.length === 0) {
+    throw new Error(`No .json files found in ${validatorsDir}`);
   }
-  return JSON.parse(validatorsJson);
-}
 
-function parseValidatorsFromFile(path: string): ValidatorInput[] {
-  const { readFileSync } = require("fs");
-  return JSON.parse(readFileSync(path, "utf-8"));
+  const validators: ValidatorConfig[] = [];
+
+  for (const file of files) {
+    const filePath = join(validatorsDir, file);
+    const data = JSON.parse(readFileSync(filePath, "utf-8"));
+    
+    if (!data.orchestratorPubkey || !data.mirageValidator || data.stake === undefined) {
+      throw new Error(`Invalid validator config in ${file}. Required: orchestratorPubkey, mirageValidator, stake`);
+    }
+
+    validators.push({
+      orchestratorPubkey: data.orchestratorPubkey,
+      mirageValidator: data.mirageValidator,
+      stake: data.stake,
+    });
+  }
+
+  return validators;
 }
 
 async function main() {
@@ -41,26 +63,24 @@ async function main() {
     process.exit(1);
   }
 
-  let validatorInputs: ValidatorInput[];
-  
-  // Default to scripts/wallets/validators.json if no env var specified
-  const validatorsFile = process.env.VALIDATORS_FILE || "scripts/wallets/validators.json";
-  console.log(`Loading validators from file: ${validatorsFile}`);
-  validatorInputs = parseValidatorsFromFile(validatorsFile);
+  // Load validator configs from scripts/validators/
+  const validatorsDir = process.env.VALIDATORS_DIR || "scripts/validators";
+  console.log(`Loading validators from: ${validatorsDir}/*.json`);
+  const validatorConfigs = loadValidators(validatorsDir);
 
-  const validators = validatorInputs.map((v) => ({
+  const validators = validatorConfigs.map((v) => ({
     orchestratorPubkey: new PublicKey(v.orchestratorPubkey),
     mirageValidator: v.mirageValidator,
-    votingPower: new BN(v.votingPower),
+    stake: new BN(Math.floor(v.stake)), // truncate decimals for on-chain
   }));
 
   console.log(`\nUpdating validator set (${validators.length} validators):`);
-  let totalPower = 0;
-  for (const v of validators) {
-    console.log(`  ${shortPubkey(v.orchestratorPubkey)} | ${v.mirageValidator} | power: ${v.votingPower.toNumber()}`);
-    totalPower += v.votingPower.toNumber();
+  let totalStake = 0;
+  for (const v of validatorConfigs) {
+    console.log(`  ${v.orchestratorPubkey.slice(0, 8)}... | ${v.mirageValidator} | stake: ${v.stake}`);
+    totalStake += v.stake;
   }
-  console.log(`  Total voting power: ${totalPower}`);
+  console.log(`  Total stake: ${totalStake}`);
   console.log("");
 
   const tx = await program.methods
@@ -81,7 +101,7 @@ async function main() {
   const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
   console.log(`\nValidator Registry:`);
   console.log(`  Count: ${registry.validators.length}`);
-  console.log(`  Total Voting Power: ${registry.totalVotingPower.toNumber()}`);
+  console.log(`  Total Stake: ${registry.totalStake.toNumber()}`);
 }
 
 main().catch((err) => {

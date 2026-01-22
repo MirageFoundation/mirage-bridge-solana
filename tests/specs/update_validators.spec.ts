@@ -18,7 +18,7 @@ describe("2. Update Validators", () => {
       {
         orchestratorPubkey: orchestrator1.publicKey,
         mirageValidator: "miragevaloper1abc123def456",
-        votingPower: new BN(1000),
+        stake: new BN(1000),
       },
     ];
 
@@ -53,8 +53,8 @@ describe("2. Update Validators", () => {
     const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
 
     expect(registry.validators.length).toBe(1);
-    expect(registry.totalVotingPower.toNumber()).toBe(1000);
-    expect(registry.validators[0].votingPower.toNumber()).toBe(1000);
+    expect(registry.totalStake.toNumber()).toBe(1000);
+    expect(registry.validators[0].stake.toNumber()).toBe(1000);
     expect(registry.validators[0].mirageValidator).toBe("miragevaloper1abc123def456");
   });
 
@@ -72,17 +72,17 @@ describe("2. Update Validators", () => {
       {
         orchestratorPubkey: orchestrator1.publicKey,
         mirageValidator: "miragevaloper1validator1",
-        votingPower: new BN(3000),
+        stake: new BN(3000),
       },
       {
         orchestratorPubkey: orchestrator2.publicKey,
         mirageValidator: "miragevaloper1validator2",
-        votingPower: new BN(2000),
+        stake: new BN(2000),
       },
       {
         orchestratorPubkey: orchestrator3.publicKey,
         mirageValidator: "miragevaloper1validator3",
-        votingPower: new BN(1000),
+        stake: new BN(1000),
       },
     ];
 
@@ -108,7 +108,7 @@ describe("2. Update Validators", () => {
 
     const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
     expect(registry.validators.length).toBe(3);
-    expect(registry.totalVotingPower.toNumber()).toBe(6000);
+    expect(registry.totalStake.toNumber()).toBe(6000);
   });
 
   it("should fail when non-authority tries to update validators", async () => {
@@ -124,7 +124,7 @@ describe("2. Update Validators", () => {
       {
         orchestratorPubkey: orchestrator.publicKey,
         mirageValidator: "miragevaloper1fake",
-        votingPower: new BN(1000),
+        stake: new BN(1000),
       },
     ];
 

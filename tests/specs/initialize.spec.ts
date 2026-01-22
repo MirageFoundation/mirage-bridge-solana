@@ -82,6 +82,6 @@ describe("1. Initialize", () => {
     const registry = await program.account.validatorRegistry.fetch(validatorRegistry);
 
     expect(registry.validators.length).toBe(0);
-    expect(registry.totalVotingPower.toNumber()).toBe(0);
+    expect(registry.totalStake.toNumber()).toBe(0);
   });
 });

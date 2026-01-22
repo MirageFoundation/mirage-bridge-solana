@@ -166,7 +166,7 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         let dest_lamports = dest_account_info.lamports();
         **dest_account_info.try_borrow_mut_lamports()? = dest_lamports
             .checked_add(record_account_info.lamports())
-            .unwrap();
+            .ok_or(BridgeError::AmountOverflow)?;
         **record_account_info.try_borrow_mut_lamports()? = 0;
         
         // No need to set data to empty, runtime handles it when lamports are 0

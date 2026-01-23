@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/mirage_bridge.json`.
  */
 export type MirageBridge = {
-  "address": "GQRBo4pVcFS5okUAdjnuQvM8oSXeKvpU16SjgE9xiu9w",
+  "address": "4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c",
   "metadata": {
     "name": "mirageBridge",
     "version": "0.1.0",
@@ -620,6 +620,90 @@ export type MirageBridge = {
       "args": []
     },
     {
+      "name": "transferAuthority",
+      "discriminator": [
+        48,
+        169,
+        76,
+        72,
+        229,
+        180,
+        55,
+        161
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "bridgeConfig",
+            "bridgeState"
+          ]
+        },
+        {
+          "name": "bridgeConfig",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bridgeState",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "transferAuthorityParams"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "unpause",
       "discriminator": [
         169,
@@ -826,6 +910,19 @@ export type MirageBridge = {
   ],
   "events": [
     {
+      "name": "authorityTransferred",
+      "discriminator": [
+        245,
+        109,
+        179,
+        54,
+        135,
+        92,
+        22,
+        64
+      ]
+    },
+    {
       "name": "bridgePaused",
       "discriminator": [
         41,
@@ -984,26 +1081,51 @@ export type MirageBridge = {
     },
     {
       "code": 6018,
+      "name": "invalidAuthority",
+      "msg": "Invalid authority (same as current)"
+    },
+    {
+      "code": 6019,
       "name": "emptyValidatorSet",
       "msg": "Validator set cannot be empty"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "tooManyValidators",
       "msg": "Too many validators"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "transactionTooOld",
       "msg": "Transaction sequence too old (outside 1024-tx window)"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "alreadyMinted",
       "msg": "Transaction already minted (replay detected)"
     }
   ],
   "types": [
+    {
+      "name": "authorityTransferred",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oldAuthority",
+            "type": "pubkey"
+          },
+          {
+            "name": "newAuthority",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "bridgeConfig",
       "type": {
@@ -1327,6 +1449,18 @@ export type MirageBridge = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "transferAuthorityParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newAuthority",
+            "type": "pubkey"
           }
         ]
       }

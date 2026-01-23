@@ -9,7 +9,7 @@ use instructions::transfer_authority::*;
 use instructions::unpause::*;
 use instructions::update_validators::*;
 
-declare_id!("GQRBo4pVcFS5okUAdjnuQvM8oSXeKvpU16SjgE9xiu9w");
+declare_id!("4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c");
 
 pub mod constants;
 pub mod errors;

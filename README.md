@@ -89,15 +89,18 @@ All commands run inside Docker. Keypairs persist on host at `~/.config/solana/`.
 # All remaining commands are inside the container:
 
 # 2. Generate keypairs (first time only)
-solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
-solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
+bun run scripts/init-wallets.ts
+# → Saves seed phrase (WRITE IT DOWN!)
+# → Creates ~/.config/solana/mirage-bridge-authority.json
+# → Creates ~/.config/solana/mirage-bridge-program.json
+# → Symlinks to target/deploy/ and runs `anchor keys sync`
 
 # 3. Fund authority (devnet - free airdrop)
-solana airdrop 5
+solana airdrop 5 <AUTHORITY_ADDRESS>
 
 # 4. Build & deploy (~2.5 SOL for program deployment)
-./build.sh
-anchor deploy
+anchor build
+anchor deploy --program-keypair ~/.config/solana/mirage-bridge-program.json
 
 # 5. Initialize bridge (~0.05 SOL for account creation)
 bun run bridge:init
@@ -131,6 +134,25 @@ Two keypairs stored at `~/.config/solana/` (mounted from host, persists across c
 |---------|---------|-------------|
 | `mirage-bridge-authority.json` | Pays for deployment, upgrade authority, bridge admin | **Always** - keep this safe |
 | `mirage-bridge-program.json` | Determines program address (public key = program ID) | Only during **initial** deployment |
+
+### Generating Keypairs
+
+```bash
+bun run scripts/init-wallets.ts
+```
+
+This script:
+1. Generates a 12-word seed phrase (displayed once - **save it!**)
+2. Creates authority keypair from seed (raw derivation)
+3. Creates program keypair (random)
+4. Outputs both addresses and the program ID
+5. Tells you exactly which files to update
+
+**Important - Two Addresses from Same Seed:**
+- **Bridge Authority** (raw derivation) - used for all bridge operations
+- **Phantom Wallet** (BIP44 derivation) - what Phantom/Solflare display
+
+These are DIFFERENT addresses from the same seed. The script shows both.
 
 **About the program keypair:**
 - The **public key** becomes your permanent program ID
@@ -253,17 +275,17 @@ Before deploying, **set up your validators** (see [Validator Registry](#validato
 # Inside container:
 
 # Generate keypairs (skip if already exist)
-solana-keygen new -o ~/.config/solana/mirage-bridge-authority.json
-solana-keygen new -o ~/.config/solana/mirage-bridge-program.json
+bun run scripts/init-wallets.ts
+# → Symlinks to target/deploy/ and runs `anchor keys sync`
 
 # Fund authority (free on devnet, need ~3 SOL total)
-solana airdrop 5
+solana airdrop 5 <AUTHORITY_ADDRESS>
 
-# Build (updates program ID in all files)
-./build.sh
+# Build
+anchor build
 
 # Deploy program (~2.5 SOL)
-anchor deploy
+anchor deploy --program-keypair ~/.config/solana/mirage-bridge-program.json
 
 # Initialize bridge (~0.05 SOL - creates config, state, registry, mint accounts)
 bun run bridge:init
@@ -318,14 +340,18 @@ scp validator2:~/.orchestrator/*.json scripts/validators/
 
 # Inside container:
 
-# Check authority balance (need ~3 SOL)
-solana balance
-# If insufficient, transfer SOL to this address:
-solana-keygen pubkey ~/.config/solana/mirage-bridge-authority.json
+# Generate keypairs (if first time)
+bun run scripts/init-wallets.ts
+# → Symlinks to target/deploy/ and runs `anchor keys sync`
 
-# Build & deploy (~2.5 SOL)
-./build.sh
-anchor deploy
+# Check authority balance (need ~3 SOL)
+# Transfer SOL to the AUTHORITY ADDRESS shown by init-wallets
+
+# Build
+anchor build
+
+# Deploy (~2.5 SOL)
+anchor deploy --program-keypair ~/.config/solana/mirage-bridge-program.json
 
 # Initialize (~0.05 SOL)
 bun run bridge:init
@@ -368,11 +394,14 @@ State is preserved. Only program code changes.
 
 | Command | Description |
 |---------|-------------|
+| `bun run scripts/init-wallets.ts` | Generate new keypairs (or show existing) |
+| `bun run scripts/init-wallets.ts --force` | Regenerate and overwrite existing keypairs |
 | `bun run bridge:init` | Initialize bridge (one-time) |
 | `bun run bridge:validators` | Update validator registry |
 | `bun run bridge:status` | View bridge status |
 | `bun run bridge:pause` | Pause bridge (emergency) |
 | `bun run bridge:unpause` | Unpause bridge |
+| `bun run scripts/transfer_authority.ts <pubkey>` | Transfer bridge authority |
 
 ---
 
@@ -440,9 +469,9 @@ All commands run inside Docker (`./docker.sh start devnet`).
 |-------|----------|
 | Account not found | `bun run bridge:init` |
 | Not registered orchestrator | `bun run bridge:validators` |
-| Insufficient funds | `solana airdrop 5` (devnet) or transfer SOL (mainnet) |
+| Insufficient funds | `solana airdrop 5 <address>` (devnet) or transfer SOL (mainnet) |
 | Bridge is paused | `bun run bridge:unpause` |
-| Program keypair not found | `solana-keygen new -o ~/.config/solana/mirage-bridge-program.json` |
+| Authority keypair not found | `bun run scripts/init-wallets.ts` |
 | Docker permission denied | `sudo usermod -aG docker $USER` then re-login |
 
 ---

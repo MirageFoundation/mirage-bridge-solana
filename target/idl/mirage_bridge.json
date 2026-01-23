@@ -1,5 +1,5 @@
 {
-  "address": "GQRBo4pVcFS5okUAdjnuQvM8oSXeKvpU16SjgE9xiu9w",
+  "address": "4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c",
   "metadata": {
     "name": "mirage_bridge",
     "version": "0.1.0",
@@ -614,6 +614,90 @@
       "args": []
     },
     {
+      "name": "transfer_authority",
+      "discriminator": [
+        48,
+        169,
+        76,
+        72,
+        229,
+        180,
+        55,
+        161
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "bridge_config",
+            "bridge_state"
+          ]
+        },
+        {
+          "name": "bridge_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bridge_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "TransferAuthorityParams"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "unpause",
       "discriminator": [
         169,
@@ -820,6 +904,19 @@
   ],
   "events": [
     {
+      "name": "AuthorityTransferred",
+      "discriminator": [
+        245,
+        109,
+        179,
+        54,
+        135,
+        92,
+        22,
+        64
+      ]
+    },
+    {
       "name": "BridgePaused",
       "discriminator": [
         41,
@@ -978,26 +1075,51 @@
     },
     {
       "code": 6018,
+      "name": "InvalidAuthority",
+      "msg": "Invalid authority (same as current)"
+    },
+    {
+      "code": 6019,
       "name": "EmptyValidatorSet",
       "msg": "Validator set cannot be empty"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "TooManyValidators",
       "msg": "Too many validators"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "TransactionTooOld",
       "msg": "Transaction sequence too old (outside 1024-tx window)"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "AlreadyMinted",
       "msg": "Transaction already minted (replay detected)"
     }
   ],
   "types": [
+    {
+      "name": "AuthorityTransferred",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "old_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "BridgeConfig",
       "type": {
@@ -1321,6 +1443,18 @@
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferAuthorityParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "new_authority",
+            "type": "pubkey"
           }
         ]
       }

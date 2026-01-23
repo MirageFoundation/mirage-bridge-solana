@@ -5,11 +5,12 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
+# Auto-updated by: bun run scripts/init-wallets.ts
 [programs.devnet]
-mirage_bridge = "4PH1ZRM9Fww7B7f2KTFBNWLwVb1CJ824imRNtKZig6tv"
+mirage_bridge = "4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c"
 
 [programs.localnet]
-mirage_bridge = "369a7CmLeMjRxVY3EfPnY9pYexgDEyCTNyBUsNSeHTbf"
+mirage_bridge = "4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c"
 
 [registry]
 url = "https://api.apr.dev"

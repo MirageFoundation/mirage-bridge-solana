@@ -65,7 +65,7 @@ export function getWalletPath(): string {
   if (keypairPath && existsSync(keypairPath)) return keypairPath;
   throw new Error(
     "No wallet configured. Set WALLET env var or configure solana CLI keypair path.\n" +
-    "Generate a keypair from seed: bun run scripts/show-addresses.ts \"your seed\" --export wallet.json"
+    "Generate new keypair: bun run scripts/show-addresses.ts --generate --export wallet.json"
   );
 }
 

@@ -8,7 +8,7 @@ use instructions::pause::*;
 use instructions::unpause::*;
 use instructions::update_validators::*;
 
-declare_id!("7S1LUgYbQ3Z3GcrymJ9L8G2PRti3o1XJyaSfh4X4avHX");
+declare_id!("GQRBo4pVcFS5okUAdjnuQvM8oSXeKvpU16SjgE9xiu9w");
 
 pub mod constants;
 pub mod errors;

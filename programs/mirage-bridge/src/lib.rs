@@ -5,6 +5,7 @@ use instructions::burn::*;
 use instructions::initialize::*;
 use instructions::mint::*;
 use instructions::pause::*;
+use instructions::transfer_authority::*;
 use instructions::unpause::*;
 use instructions::update_validators::*;
 
@@ -46,5 +47,12 @@ pub mod mirage_bridge {
 
     pub fn unpause(ctx: Context<Unpause>) -> Result<()> {
         instructions::unpause::unpause(ctx)
+    }
+
+    pub fn transfer_authority(
+        ctx: Context<TransferAuthority>,
+        params: TransferAuthorityParams,
+    ) -> Result<()> {
+        instructions::transfer_authority::transfer_authority(ctx, params)
     }
 }

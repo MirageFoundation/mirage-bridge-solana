@@ -36,3 +36,10 @@ pub struct BridgeUnpaused {
     pub authority: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct AuthorityTransferred {
+    pub old_authority: Pubkey,
+    pub new_authority: Pubkey,
+    pub timestamp: i64,
+}

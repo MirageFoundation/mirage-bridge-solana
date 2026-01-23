@@ -52,11 +52,21 @@ export function loadKeypair(path: string): Keypair {
   return Keypair.fromSecretKey(Uint8Array.from(secretKey));
 }
 
+/**
+ * Get wallet keypair path
+ * Priority:
+ * 1. WALLET env var (explicit path)
+ * 2. Solana CLI config keypair path
+ * 3. Fail - no implicit fallbacks for production safety
+ */
 export function getWalletPath(): string {
   if (process.env.WALLET) return process.env.WALLET;
   const { keypairPath } = getSolanaConfig();
   if (keypairPath && existsSync(keypairPath)) return keypairPath;
-  return "./test-wallet.json";
+  throw new Error(
+    "No wallet configured. Set WALLET env var or configure solana CLI keypair path.\n" +
+    "Generate a keypair from seed: bun run scripts/show-addresses.ts \"your seed\" --export wallet.json"
+  );
 }
 
 export function getConnection(network: Network): Connection {
@@ -90,7 +100,8 @@ export function setupFromEnv(): {
   program: Program<MirageBridge>;
 } {
   const network = getNetwork();
-  const wallet = loadKeypair(getWalletPath());
+  const walletPath = getWalletPath();
+  const wallet = loadKeypair(walletPath);
   const connection = getConnection(network);
   const provider = getProvider(connection, wallet);
   const program = getProgram(provider);

@@ -41,6 +41,8 @@ pub enum BridgeError {
 
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Invalid authority (same as current)")]
+    InvalidAuthority,
     #[msg("Validator set cannot be empty")]
     EmptyValidatorSet,
     #[msg("Too many validators")]

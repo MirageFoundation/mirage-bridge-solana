@@ -154,22 +154,20 @@ pub fn mint(ctx: Context<MintTokens>, params: MintParams) -> Result<()> {
         });
 
         // Close MintRecord and refund rent to original payer
-        require!(
-            mint_record.payer == ctx.accounts.mint_record_payer.key(),
-            BridgeError::Unauthorized
-        );
+        // Only close if the caller passed the correct payer account
+        // This handles the race condition where a different validator crosses the threshold
+        if mint_record.payer == ctx.accounts.mint_record_payer.key() {
+            let dest_account_info = ctx.accounts.mint_record_payer.to_account_info();
+            let record_account_info = mint_record.to_account_info();
 
-        let dest_account_info = ctx.accounts.mint_record_payer.to_account_info();
-        let record_account_info = mint_record.to_account_info();
-
-        // Transfer lamports
-        let dest_lamports = dest_account_info.lamports();
-        **dest_account_info.try_borrow_mut_lamports()? = dest_lamports
-            .checked_add(record_account_info.lamports())
-            .ok_or(BridgeError::AmountOverflow)?;
-        **record_account_info.try_borrow_mut_lamports()? = 0;
-        
-        // No need to set data to empty, runtime handles it when lamports are 0
+            // Transfer lamports
+            let dest_lamports = dest_account_info.lamports();
+            **dest_account_info.try_borrow_mut_lamports()? = dest_lamports
+                .checked_add(record_account_info.lamports())
+                .ok_or(BridgeError::AmountOverflow)?;
+            **record_account_info.try_borrow_mut_lamports()? = 0;
+        }
+        // If payer mismatch, leave MintRecord open - rent is small and mint still succeeds
     }
 
     Ok(())

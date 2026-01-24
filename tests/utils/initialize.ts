@@ -6,6 +6,8 @@ import { LiteSVM } from "litesvm";
 import IDL from "../../target/idl/mirage_bridge.json";
 import { TestContext } from "./setup";
 
+const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+
 export async function initializeTestContext(): Promise<TestContext> {
   const authority = Keypair.generate();
 
@@ -15,6 +17,9 @@ export async function initializeTestContext(): Promise<TestContext> {
 
   const programId = new PublicKey(IDL.address);
   svm.addProgramFromFile(programId, "target/deploy/mirage_bridge.so");
+
+  // Load Token Metadata program for metadata creation
+  svm.addProgramFromFile(METADATA_PROGRAM_ID, "tests/programs/mpl_token_metadata.so");
 
   const connection = {
     ...svm,

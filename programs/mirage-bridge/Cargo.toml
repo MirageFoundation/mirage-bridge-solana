@@ -24,6 +24,7 @@ custom-panic = []
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = "0.32.1"
 bech32 = "0.11"
+mpl-token-metadata = "5.1"
 
 
 [lints.rust]

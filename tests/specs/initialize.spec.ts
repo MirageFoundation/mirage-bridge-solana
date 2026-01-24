@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { Transaction, SystemProgram } from "@solana/web3.js";
+import { Transaction, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getTestContext } from "../utils/setup";
-import { getBridgeConfigPDA, getValidatorRegistryPDA, getMintPDA } from "../utils/helpers";
+import { getBridgeConfigPDA, getValidatorRegistryPDA, getMintPDA, getMetadataPDA, METADATA_PROGRAM_ID } from "../utils/helpers";
 import BN from "bn.js";
 import { FailedTransactionMetadata } from "litesvm";
 
@@ -13,22 +13,32 @@ describe("1. Initialize", () => {
     const [bridgeConfig] = getBridgeConfigPDA();
     const [validatorRegistry] = getValidatorRegistryPDA();
     const [tokenMint] = getMintPDA();
+    const [metadata] = getMetadataPDA();
 
     const mirageChainId = "mirage-1";
     const attestationThreshold = new BN(6667);
+    const tokenName = "MIRAGE";
+    const tokenSymbol = "MIRAGE";
+    const tokenUri = "https://mirage.talk/metadata/solana/token.json";
 
     const ix = await program.methods
       .initialize({
         mirageChainId,
         attestationThreshold,
+        tokenName,
+        tokenSymbol,
+        tokenUri,
       })
       .accounts({
         authority: authority.publicKey,
         bridgeConfig,
         validatorRegistry,
         tokenMint,
+        metadata,
+        tokenMetadataProgram: METADATA_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
+        rent: SYSVAR_RENT_PUBKEY,
       })
       .instruction();
 
@@ -55,6 +65,10 @@ describe("1. Initialize", () => {
 
     const mintAccount = svm.getAccount(tokenMint);
     expect(mintAccount).not.toBeNull();
+
+    // Verify metadata account was created
+    const metadataAccount = svm.getAccount(metadata);
+    expect(metadataAccount).not.toBeNull();
   });
 
   it("should have correct bridge config state after initialization", async () => {

@@ -306,12 +306,24 @@ export type MirageBridge = {
           }
         },
         {
+          "name": "metadata",
+          "writable": true
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -753,6 +765,95 @@ export type MirageBridge = {
       "args": []
     },
     {
+      "name": "updateMetadata",
+      "discriminator": [
+        170,
+        182,
+        43,
+        239,
+        97,
+        78,
+        225,
+        186
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bridgeConfig"
+          ]
+        },
+        {
+          "name": "bridgeConfig",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "bridgeConfig"
+          ]
+        },
+        {
+          "name": "metadata",
+          "writable": true
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "updateMetadataParams"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "updateValidators",
       "discriminator": [
         211,
@@ -962,6 +1063,19 @@ export type MirageBridge = {
       ]
     },
     {
+      "name": "metadataUpdated",
+      "discriminator": [
+        132,
+        36,
+        215,
+        246,
+        166,
+        90,
+        189,
+        44
+      ]
+    },
+    {
       "name": "mintAttested",
       "discriminator": [
         107,
@@ -1103,6 +1217,11 @@ export type MirageBridge = {
       "code": 6022,
       "name": "alreadyMinted",
       "msg": "Transaction already minted (replay detected)"
+    },
+    {
+      "code": 6023,
+      "name": "invalidMint",
+      "msg": "Invalid mint address"
     }
   ],
   "types": [
@@ -1319,6 +1438,46 @@ export type MirageBridge = {
           {
             "name": "attestationThreshold",
             "type": "u64"
+          },
+          {
+            "name": "tokenName",
+            "type": "string"
+          },
+          {
+            "name": "tokenSymbol",
+            "type": "string"
+          },
+          {
+            "name": "tokenUri",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "metadataUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "metadata",
+            "type": "pubkey"
+          },
+          {
+            "name": "created",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -1461,6 +1620,26 @@ export type MirageBridge = {
           {
             "name": "newAuthority",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "updateMetadataParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tokenName",
+            "type": "string"
+          },
+          {
+            "name": "tokenSymbol",
+            "type": "string"
+          },
+          {
+            "name": "tokenUri",
+            "type": "string"
           }
         ]
       }

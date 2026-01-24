@@ -7,6 +7,7 @@ use instructions::mint::*;
 use instructions::pause::*;
 use instructions::transfer_authority::*;
 use instructions::unpause::*;
+use instructions::update_metadata::*;
 use instructions::update_validators::*;
 
 declare_id!("4taEm2D4skz4sPCMJEnLhF9XSDoULtgnn85M1bxbWA2c");
@@ -54,5 +55,12 @@ pub mod mirage_bridge {
         params: TransferAuthorityParams,
     ) -> Result<()> {
         instructions::transfer_authority::transfer_authority(ctx, params)
+    }
+
+    pub fn update_metadata(
+        ctx: Context<UpdateMetadata>,
+        params: UpdateMetadataParams,
+    ) -> Result<()> {
+        instructions::update_metadata::update_metadata(ctx, params)
     }
 }

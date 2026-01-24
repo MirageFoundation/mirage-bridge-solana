@@ -43,3 +43,12 @@ pub struct AuthorityTransferred {
     pub new_authority: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct MetadataUpdated {
+    pub authority: Pubkey,
+    pub mint: Pubkey,
+    pub metadata: Pubkey,
+    pub created: bool,
+    pub timestamp: i64,
+}

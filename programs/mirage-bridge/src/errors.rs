@@ -53,4 +53,6 @@ pub enum BridgeError {
     TransactionTooOld,
     #[msg("Transaction already minted (replay detected)")]
     AlreadyMinted,
+    #[msg("Invalid mint address")]
+    InvalidMint,
 }

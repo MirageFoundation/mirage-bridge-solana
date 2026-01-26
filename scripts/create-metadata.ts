@@ -4,7 +4,7 @@ import { getBridgeConfigPDA, getMintPDA, getMetadataPDA, METADATA_PROGRAM_ID, lo
 import { confirmTx } from "./common/utils";
 
 async function main() {
-    console.log("=== Update Token Metadata ===\n");
+    console.log("=== Create Token Metadata ===\n");
 
     const { connection, wallet, program } = setupFromEnv();
     logPDAs();
@@ -21,6 +21,14 @@ async function main() {
         process.exit(1);
     }
 
+    // Check if metadata already exists
+    const existingMetadata = await connection.getAccountInfo(metadata);
+    if (existingMetadata) {
+        console.log("❌ Metadata already exists!");
+        console.log(`  Metadata: ${metadata.toBase58()}`);
+        process.exit(1);
+    }
+
     const config = await program.account.bridgeConfig.fetch(bridgeConfig);
 
     // Verify authority
@@ -31,15 +39,11 @@ async function main() {
         process.exit(1);
     }
 
-    // Check if metadata already exists
-    const existingMetadata = await connection.getAccountInfo(metadata);
-    const isUpdate = existingMetadata !== null;
-
     const tokenName = process.env.TOKEN_NAME || "MIRAGE";
     const tokenSymbol = process.env.TOKEN_SYMBOL || "MIRAGE";
     const tokenUri = process.env.TOKEN_URI || "https://mirage.talk/metadata/solana/token.json";
 
-    console.log(`${isUpdate ? "Updating" : "Creating"} metadata with:`);
+    console.log(`Creating metadata with:`);
     console.log(`  Token Name: ${tokenName}`);
     console.log(`  Token Symbol: ${tokenSymbol}`);
     console.log(`  Token URI: ${tokenUri}`);
@@ -48,7 +52,7 @@ async function main() {
     console.log("");
 
     const tx = await program.methods
-        .updateMetadata({
+        .createMetadata({
             tokenName,
             tokenSymbol,
             tokenUri,
@@ -66,7 +70,7 @@ async function main() {
 
     await confirmTx(connection, tx);
 
-    console.log(`✅ Token metadata ${isUpdate ? "updated" : "created"}!`);
+    console.log(`✅ Token metadata created!`);
     console.log(`  Transaction: ${tx}`);
     console.log(`  Metadata: ${metadata.toBase58()}`);
 }
